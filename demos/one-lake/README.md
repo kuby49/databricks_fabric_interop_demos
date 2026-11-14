@@ -5,8 +5,8 @@ workspace, Storage item, identity roles, isolated writable credential, external
 location, and managed schema are recorded in `deployment-manifest.json`. Four
 OneLake-backed managed Delta tables were created and validated in Databricks. The
 original shared credential remains read-only and unmodified. A dedicated Fabric
-Databricks connection was approved but still requires interactive organizational
-sign-in; no unverified connection was adopted. The mirror and append have not run.
+Databricks connection was created by the user, but its organizational-account identity
+and usability still need verification. The mirror and append have not run.
 The baseline mirror check missed its 900-second deadline and is a policy failure,
 not a measured propagation latency. See the manifest for the original commit time,
 deadline, and observed state; do not reset the clock for a later observation.
@@ -238,11 +238,12 @@ no auto-deploy path in this demo.
     deployment manifest. Do not infer latency or completion from the notebook ending.
 
 The deployment is partial; consult the manifest for created resources and blockers.
-To resume this deployment, create the approved dedicated Azure Databricks workspace
-connection with the MCAP administrator's organizational account, verify its identity
-and scoped UC privileges, then create the mirror. The baseline deadline above has
-already elapsed; a later successful query cannot turn that attempt into an on-time
-pass. Do not append until the mirror is configured and the baseline has been checked.
+To resume this deployment, verify the dedicated Azure Databricks workspace connection's
+organizational-account identity, usability, and scoped UC privileges, then create the
+mirror. Do not infer the account from the connection owner's identity. The baseline
+deadline above has already elapsed; a later successful query cannot turn that attempt
+into an on-time pass. Do not append until the mirror is configured and the baseline
+has been checked.
 
 ## Presenter walkthrough
 
@@ -314,6 +315,6 @@ pass. Do not append until the mirror is configured and the baseline has been che
   ```
 
   This command only prints supported top-level kinds; it does not list the recorded
-  Databricks workspace files, notebooks, directory tree, or individual tables. Review
-  those manifest entries separately. It never deletes anything. Do not remove resources
-  that are absent from the sanitized manifest.
+  Fabric connection, Databricks workspace files, notebooks, directory tree, or
+  individual tables. Review those manifest entries separately. It never deletes
+  anything. Do not remove resources absent from the sanitized manifest.
