@@ -1,14 +1,14 @@
 {
   "demo": "one-lake",
   "prefix": "fabricinterop",
-  "status": "partial_mirror_connection_blocked",
-  "live_execution": "partial",
+  "status": "completed_with_baseline_deadline_failure",
+  "live_execution": "completed",
   "resource_creation_performed": true,
   "verification": {
     "status": "partial",
     "observed_at": "2026-11-14T17:22:33Z",
     "latency_seconds": null,
-    "notes": "Four managed Delta tables were created and validated in Databricks. The baseline mirror visibility check failed the 900-second policy because no mirror or SQL endpoint was available by the deadline; propagation latency was not measured. The append and after checks are blocked pending a verified dedicated connection and mirror."
+    "notes": "Four managed Delta tables were created and validated in Databricks. The baseline mirror visibility check failed the 900-second policy because no mirror or SQL endpoint was available by the deadline; propagation latency was not measured. A later exact baseline comparison matched, and the separately timed append verification passed."
   },
   "access_changes": [
     {
@@ -44,7 +44,7 @@
     "catalog": "dbxfabricinterop",
     "existing_storage_credential": "onelake_storage_cred (read_only=true)",
     "demo_storage_credential": "fabricinterop_onelake_cred (read_only=false; isolated and workspace-bound)",
-    "mirror_identity_privileges": "The intended MCAP administrator has explicit catalog-level EXTERNAL_USE_SCHEMA; no Fabric connection identity has yet been verified.",
+    "mirror_identity_privileges": "The MCAP administrator has explicit catalog-level EXTERNAL_USE_SCHEMA and is the user-confirmed connection identity; Fabric connection metadata does not expose the OAuth principal.",
     "access_connector": "dbx-access-connector-onelake",
     "tenant_sas_key_generation": "enabled",
     "tenant_sas_authentication_default": "disabled; delegated to workspace",
@@ -59,8 +59,15 @@
     "test_connection_skipped": false,
     "created_at_utc": "2026-11-14T18:06:33Z",
     "observed_at_utc": "2026-11-14T18:07:51Z",
-    "status": "ownership_confirmed_identity_unverified",
-    "notes": "The user confirmed this is their connection. Fabric returned the current caller as Owner, but connection metadata does not identify the OAuth principal or prove a successful test. Do not use until identity is verified."
+    "status": "identity_user_confirmed_connection_online",
+    "oauth_principal": "admin@MngEnvMCAP885977.onmicrosoft.com",
+    "test_connection": {
+      "operation_id": "04e25d5f-6235-4a12-91af-6769f073a039",
+      "status": "Online",
+      "errors": [],
+      "observed_at_utc": "2026-11-14T18:15:53Z"
+    },
+    "notes": "The user confirmed ownership and the organizational account used to sign in. Fabric returned the current caller as Owner; the OAuth principal is user-confirmed, not exposed by connection metadata."
   },
   "created_resources": [
     {
@@ -87,7 +94,26 @@
       "display_name": "fabricinterop_onelake_connection admin",
       "id": "18f5c646-f700-4f5b-bc1e-ba0e4be2224f",
       "created_at_utc": "2026-11-14T18:06:33Z",
-      "verification": "The user confirmed this is their connection; its OAuth principal and usability remain unverified."
+      "verification": "The user confirmed this is their connection and that the organizational account is admin@MngEnvMCAP885977.onmicrosoft.com. Fabric testConnection returned Online with no errors."
+    },
+    {
+      "kind": "fabric_mirror",
+      "created_by_demo": true,
+      "created_by_user": true,
+      "name": "fabricinterop_catalog_mirror",
+      "id": "eeb9c3bc-94a6-480e-8dfb-b1fe32096f85",
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "observed_at_utc": "2026-11-14T18:24:02Z",
+      "verification": "Fabric definition read-back at 2026-11-14T18:28:38Z confirms Partial catalog and Partial schema, explicitly including only dimcustomer, dimdate, dimproduct and factsales, with autoSync Enabled and the approved connection. The user-created Full-schema selection was narrowed using operation 75612f31-bb22-417c-8e02-110880880ce5."
+    },
+    {
+      "kind": "fabric_sql_endpoint",
+      "created_by_demo": true,
+      "name": "fabricinterop_catalog_mirror",
+      "id": "1ad5b6ba-b0bc-4ba8-9e35-c32442baf898",
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "observed_at_utc": "2026-11-14T18:24:02Z",
+      "verification": "Fabric SQL queries returned all four demo tables and matching exact baseline and post-append aggregates."
     },
     {
       "kind": "uc_storage_credential",
@@ -222,6 +248,15 @@
       "observed_at_utc": "2026-11-14T17:18:56Z"
     },
     {
+      "kind": "databricks_notebook",
+      "created_by_demo": true,
+      "name": "fabricinterop_append_timed",
+      "path": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo/demos/one-lake/notebooks/fabricinterop_append_timed",
+      "object_id": 2730336194485447,
+      "observed_at_utc": "2026-11-14T18:34:29Z",
+      "purpose": "Runs the guarded append and returns the latest Delta commit timestamp in UTC for the separate timed check."
+    },
+    {
       "kind": "databricks_managed_tables",
       "created_by_demo": true,
       "name": "fabricinterop_onelake_baseline_tables",
@@ -335,9 +370,37 @@
     "latency_seconds": null,
     "evidence": "Fabric workspace inventory contained only the Storage item after the deadline; no mirror or SQL endpoint existed and no mirror query could be run. This is a deadline-policy failure, not a measured propagation latency."
   },
-  "pending_prerequisites": [
-    "Verify the organizational-account OAuth identity and usability of the user-created dedicated Fabric Databricks connection.",
-    "Create the scoped mirror and verify its SQL analytics endpoint; do not adopt an unverified existing connection.",
-    "Run the guarded append and its 900-second mirror check only after mirror setup and baseline verification."
-  ]
+  "mirror_baseline_late_observation": {
+    "observed_at_utc": "2026-11-14T18:32:14.320539Z",
+    "row_counts": {"DimDate": 365, "DimProduct": 20, "DimCustomer": 100, "FactSales": 10000},
+    "sales_total": "930299.36",
+    "mismatch_count": 0,
+    "deadline_outcome": "FAIL",
+    "evidence": "Fabric SQL endpoint exact expected-versus-actual date, category, region and total checks returned zero mismatches; counts were independently queried. This late match does not change the original deadline failure."
+  },
+  "append_run": {
+    "run_id": 963843642355579,
+    "submitted_at_utc": "2026-11-14T18:35:11Z",
+    "performance_target": "PERFORMANCE_OPTIMIZED",
+    "task_run_id": 454937768202578,
+    "status": "success",
+    "observed_at_utc": "2026-11-14T18:36:06Z",
+    "delta_version": 2,
+    "delta_operation": "WRITE",
+    "committed_at_utc": "2026-11-14T18:35:50.718Z",
+    "evidence": "Guarded deterministic append completed and the notebook returned the latest Delta commit timestamp in UTC."
+  },
+  "mirror_append_verification": {
+    "status": "pass",
+    "timeout_seconds": 900,
+    "visibility_event_at_utc": "2026-11-14T18:35:50.718Z",
+    "deadline_at_utc": "2026-11-14T18:50:50.718Z",
+    "observed_at_utc": "2026-11-14T18:37:03.835810Z",
+    "observed_elapsed_seconds": 73.11781,
+    "row_count": 11000,
+    "sales_total": "1020017.60",
+    "mismatch_count": 0,
+    "evidence": "Exact expected-versus-actual date, category, region and total checks returned zero mismatches by the deadline. Elapsed time is to the matching observation, not the first visibility time."
+  },
+  "pending_prerequisites": []
 }

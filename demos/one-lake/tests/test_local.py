@@ -158,8 +158,12 @@ class OneLakeLocalChecks(unittest.TestCase):
             self.assertIn("@VisibilityEventUtc > @ObservedUtc", sql)
         self.assertIn("DECLARE @Phase NVARCHAR(10) = N'before'", before)
         self.assertIn("DECLARE @Phase NVARCHAR(10) = N'after'", after)
-        self.assertIn("CAST(10 AS BIGINT) AS RowCount", before)
-        self.assertIn("CAST(13 AS BIGINT) AS RowCount", after)
+        self.assertIn("CAST(10 AS BIGINT) AS SalesRowCount", before)
+        self.assertIn("CAST(13 AS BIGINT) AS SalesRowCount", after)
+        for sql in (before, after):
+            self.assertNotRegex(sql, r"\bRowCount\b")
+            for table in ("dimdate", "dimproduct", "dimcustomer", "factsales"):
+                self.assertIn(f"[<mirror_schema>].[{table}]", sql)
 
     def test_mirror_visibility_passes_at_deadline_but_not_after(self):
         event = datetime(2026, 5, 1, tzinfo=timezone.utc)
@@ -317,6 +321,11 @@ class OneLakeLocalChecks(unittest.TestCase):
         manifest["resource_creation_performed"] = True
         manifest["created_resources"] = [
             {
+                "kind": "fabric_connection",
+                "name": "fabricinterop_connection",
+                "created_by_demo": True,
+            },
+            {
                 "kind": "fabric_workspace",
                 "name": "fabricinterop_onelake",
                 "created_by_demo": True,
@@ -334,7 +343,10 @@ class OneLakeLocalChecks(unittest.TestCase):
         ]
         self.assertEqual(
             CLEANUP_VARS["eligible_resources"](manifest),
-            [{"kind": "fabric_workspace", "name": "fabricinterop_onelake"}],
+            [
+                {"kind": "fabric_connection", "name": "fabricinterop_connection"},
+                {"kind": "fabric_workspace", "name": "fabricinterop_onelake"},
+            ],
         )
 
 

@@ -1,5 +1,5 @@
 # Databricks notebook source
-# This notebook is prepared for a deterministic, idempotent append; it has not been run.
+# This notebook performs a deterministic, idempotent append.
 
 # COMMAND ----------
 

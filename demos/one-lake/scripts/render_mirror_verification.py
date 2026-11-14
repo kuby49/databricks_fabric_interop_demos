@@ -152,96 +152,96 @@ DECLARE @DeadlineUtc DATETIME2(7) =
          ELSE DATEADD(SECOND, @VisibilityTimeoutSeconds, @VisibilityEventUtc) END;
 
 ;WITH ExpectedDate AS (
-    SELECT v.DateKey, v.Bucket, v.RowCount, v.SalesTotal
+    SELECT v.DateKey, v.Bucket, v.SalesRowCount, v.SalesTotal
     FROM (VALUES
         {_values(expected["date_values"])}
-    ) AS v(DateKey, Bucket, RowCount, SalesTotal)
+    ) AS v(DateKey, Bucket, SalesRowCount, SalesTotal)
 ),
 ActualDate AS (
     SELECT
         d.DateKey,
         CONVERT(NVARCHAR(30), d.[Date], 23) AS Bucket,
-        COUNT_BIG(f.SalesLineKey) AS RowCount,
+        COUNT_BIG(f.SalesLineKey) AS SalesRowCount,
         COALESCE(SUM(CAST(f.SalesAmount AS DECIMAL(19,2))),
                  CAST(0 AS DECIMAL(19,2))) AS SalesTotal
-    FROM [<mirror_schema>].[DimDate] AS d
-    LEFT JOIN [<mirror_schema>].[FactSales] AS f ON f.DateKey = d.DateKey
+    FROM [<mirror_schema>].[dimdate] AS d
+    LEFT JOIN [<mirror_schema>].[factsales] AS f ON f.DateKey = d.DateKey
     GROUP BY d.DateKey, d.[Date]
 ),
 ExpectedCategory AS (
-    SELECT v.Bucket, v.RowCount, v.SalesTotal
+    SELECT v.Bucket, v.SalesRowCount, v.SalesTotal
     FROM (VALUES
         {_values(expected["category_values"])}
-    ) AS v(Bucket, RowCount, SalesTotal)
+    ) AS v(Bucket, SalesRowCount, SalesTotal)
 ),
 ActualCategory AS (
     SELECT
         p.Category AS Bucket,
-        COUNT_BIG(f.SalesLineKey) AS RowCount,
+        COUNT_BIG(f.SalesLineKey) AS SalesRowCount,
         COALESCE(SUM(CAST(f.SalesAmount AS DECIMAL(19,2))),
                  CAST(0 AS DECIMAL(19,2))) AS SalesTotal
-    FROM [<mirror_schema>].[DimProduct] AS p
-    LEFT JOIN [<mirror_schema>].[FactSales] AS f ON f.ProductKey = p.ProductKey
+    FROM [<mirror_schema>].[dimproduct] AS p
+    LEFT JOIN [<mirror_schema>].[factsales] AS f ON f.ProductKey = p.ProductKey
     GROUP BY p.Category
 ),
 ExpectedRegion AS (
-    SELECT v.Bucket, v.RowCount, v.SalesTotal
+    SELECT v.Bucket, v.SalesRowCount, v.SalesTotal
     FROM (VALUES
         {_values(expected["region_values"])}
-    ) AS v(Bucket, RowCount, SalesTotal)
+    ) AS v(Bucket, SalesRowCount, SalesTotal)
 ),
 ActualRegion AS (
     SELECT
         c.Region AS Bucket,
-        COUNT_BIG(f.SalesLineKey) AS RowCount,
+        COUNT_BIG(f.SalesLineKey) AS SalesRowCount,
         COALESCE(SUM(CAST(f.SalesAmount AS DECIMAL(19,2))),
                  CAST(0 AS DECIMAL(19,2))) AS SalesTotal
-    FROM [<mirror_schema>].[DimCustomer] AS c
-    LEFT JOIN [<mirror_schema>].[FactSales] AS f ON f.CustomerKey = c.CustomerKey
+    FROM [<mirror_schema>].[dimcustomer] AS c
+    LEFT JOIN [<mirror_schema>].[factsales] AS f ON f.CustomerKey = c.CustomerKey
     GROUP BY c.Region
 ),
 ExpectedTotal AS (
-    SELECT {expected_count_sql} AS RowCount, {expected_total_sql} AS SalesTotal
+    SELECT {expected_count_sql} AS SalesRowCount, {expected_total_sql} AS SalesTotal
 ),
 ActualTotal AS (
-    SELECT COUNT_BIG(*) AS RowCount,
+    SELECT COUNT_BIG(*) AS SalesRowCount,
            COALESCE(SUM(CAST(SalesAmount AS DECIMAL(19,2))),
                     CAST(0 AS DECIMAL(19,2))) AS SalesTotal
-    FROM [<mirror_schema>].[FactSales]
+    FROM [<mirror_schema>].[factsales]
 ),
 Checks AS (
     SELECT
         CAST('TOTAL' AS NVARCHAR(20)) AS CheckName,
         CAST('all FactSales rows' AS NVARCHAR(100)) AS Bucket,
-        e.RowCount AS ExpectedRowCount,
-        a.RowCount AS ActualRowCount,
+        e.SalesRowCount AS ExpectedRowCount,
+        a.SalesRowCount AS ActualRowCount,
         e.SalesTotal AS ExpectedSalesTotal,
         a.SalesTotal AS ActualSalesTotal,
-        CASE WHEN e.RowCount <> a.RowCount OR e.SalesTotal <> a.SalesTotal
+        CASE WHEN e.SalesRowCount <> a.SalesRowCount OR e.SalesTotal <> a.SalesTotal
              THEN 1 ELSE 0 END AS IsMismatch
     FROM ExpectedTotal AS e CROSS JOIN ActualTotal AS a
     UNION ALL
     SELECT 'DATE', COALESCE(e.Bucket, a.Bucket),
-           e.RowCount, a.RowCount, e.SalesTotal, a.SalesTotal,
+           e.SalesRowCount, a.SalesRowCount, e.SalesTotal, a.SalesTotal,
            CASE WHEN e.DateKey IS NULL OR a.DateKey IS NULL
                       OR e.Bucket <> a.Bucket
-                      OR e.RowCount <> a.RowCount OR e.SalesTotal <> a.SalesTotal
+                      OR e.SalesRowCount <> a.SalesRowCount OR e.SalesTotal <> a.SalesTotal
                 THEN 1 ELSE 0 END
     FROM ExpectedDate AS e
     FULL OUTER JOIN ActualDate AS a ON e.DateKey = a.DateKey
     UNION ALL
     SELECT 'CATEGORY', COALESCE(e.Bucket, a.Bucket),
-           e.RowCount, a.RowCount, e.SalesTotal, a.SalesTotal,
+           e.SalesRowCount, a.SalesRowCount, e.SalesTotal, a.SalesTotal,
            CASE WHEN e.Bucket IS NULL OR a.Bucket IS NULL
-                      OR e.RowCount <> a.RowCount OR e.SalesTotal <> a.SalesTotal
+                      OR e.SalesRowCount <> a.SalesRowCount OR e.SalesTotal <> a.SalesTotal
                 THEN 1 ELSE 0 END
     FROM ExpectedCategory AS e
     FULL OUTER JOIN ActualCategory AS a ON e.Bucket = a.Bucket
     UNION ALL
     SELECT 'REGION', COALESCE(e.Bucket, a.Bucket),
-           e.RowCount, a.RowCount, e.SalesTotal, a.SalesTotal,
+           e.SalesRowCount, a.SalesRowCount, e.SalesTotal, a.SalesTotal,
            CASE WHEN e.Bucket IS NULL OR a.Bucket IS NULL
-                      OR e.RowCount <> a.RowCount OR e.SalesTotal <> a.SalesTotal
+                      OR e.SalesRowCount <> a.SalesRowCount OR e.SalesTotal <> a.SalesTotal
                 THEN 1 ELSE 0 END
     FROM ExpectedRegion AS e
     FULL OUTER JOIN ActualRegion AS a ON e.Bucket = a.Bucket

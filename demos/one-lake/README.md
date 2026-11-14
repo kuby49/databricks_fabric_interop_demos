@@ -1,12 +1,15 @@
 # OneLake interoperability demo
 
-**Status: partial live deployment; mirror and append checks blocked.** The dedicated
+**Status: deployed; original baseline deadline failed, append check passed.** The dedicated
 workspace, Storage item, identity roles, isolated writable credential, external
 location, and managed schema are recorded in `deployment-manifest.json`. Four
 OneLake-backed managed Delta tables were created and validated in Databricks. The
 original shared credential remains read-only and unmodified. A dedicated Fabric
-Databricks connection was created by the user, but its organizational-account identity
-and usability still need verification. The mirror and append have not run.
+Databricks connection was created by the user, who confirmed the MCAP administrator
+account used to sign in; Fabric's connection test returned Online. The user created
+the mirror after confirming selection of only the demo schema and its four tables.
+Read-back confirms an explicit four-table include list. A later exact baseline
+comparison matched, and the separately timed append check passed.
 The baseline mirror check missed its 900-second deadline and is a policy failure,
 not a measured propagation latency. See the manifest for the original commit time,
 deadline, and observed state; do not reset the clock for a later observation.
@@ -237,13 +240,12 @@ no auto-deploy path in this demo.
     Record observed times, counts, and outcomes only after actual execution in a reviewed
     deployment manifest. Do not infer latency or completion from the notebook ending.
 
-The deployment is partial; consult the manifest for created resources and blockers.
-To resume this deployment, verify the dedicated Azure Databricks workspace connection's
-organizational-account identity, usability, and scoped UC privileges, then create the
-mirror. Do not infer the account from the connection owner's identity. The baseline
-deadline above has already elapsed; a later successful query cannot turn that attempt
-into an on-time pass. Do not append until the mirror is configured and the baseline
-has been checked.
+Consult the manifest for created resources and verification evidence.
+The connection account was confirmed by the user, not inferred from the owner.
+The mirror and baseline are now checked. The baseline deadline above has already
+elapsed; the later matching query does not turn that attempt into an on-time pass.
+The guarded append was observed matching after about 73 seconds; this is the time to
+the matching observation, not the first visibility time.
 
 ## Presenter walkthrough
 

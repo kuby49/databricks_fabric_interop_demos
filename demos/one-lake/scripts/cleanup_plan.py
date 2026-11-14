@@ -16,6 +16,7 @@ ALLOWED_KINDS = {
     "uc_external_location",
     "uc_storage_credential",
     "fabric_mirror",
+    "fabric_connection",
     "fabric_storage_item",
     "fabric_workspace",
 }
