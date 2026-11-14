@@ -1,17 +1,17 @@
-# Live evidence — pre-edit model captured; report and post-change checks pending
+# Live evidence — report baseline and one-time append recorded
 
-This record contains sanitized live observations. Credentials and bearer tokens were not logged or persisted. Relationship evidence was captured before manual model edits; none have been made.
+This record contains sanitized live observations. Credentials and bearer tokens were not logged or persisted. Relationship evidence was captured before manual model edits; none have been made. The approved append ran once, and exact source/model totals matched within the configured visibility window.
 
 ## Context and isolation
 
-* Verification date/time (UTC): source recheck `2026-11-14T17:37:22.034Z`; exact timestamp of the earlier pre-edit model inspection was not retained in the session checkpoint.
+* Verification date/time (UTC): baseline report UI around `2026-11-14T19:12Z`–`19:13Z`; pre-append source recheck `2026-11-14T19:43:02.697Z`; append commit `2026-11-14T19:47:09Z`; post-change source read `2026-11-14T19:48:22Z`; exact model check completed by `2026-11-14T19:52:05.744Z`. The earlier pre-edit model inspection timestamp was not retained in the session checkpoint.
 * Environment/home tenant: MCAP / `4526cee1-4399-4e4b-9134-46fabd583527`.
 * Databricks workspace: `dbxfabricinterop`, ID `5878076557050`; approved catalog `dbxfabricinterop`; schema `fabricinterop_powerbi`; SQL warehouse `fabricinterop-powerbi-demo`, ID `f37863b7242d0931`.
 * Fabric workspace `fabricinterop_powerbi`, ID `bdd6b268-1844-42a5-93ac-261b084fbaee`; shared capacity ID `de12195c-40d2-4bee-af60-f0d6dedfbb0f`.
 * Semantic model `dbxfabricinterop-fabricinterop_powerbi`, ID `39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1`. Configured expected name was `fabricinterop_powerbi_model`; preserve actual identity. The user completed Databricks Catalog Explorer **Publish to Power BI** in a regular browser.
 * Dataset/model metadata separately reported `defaultMode: Import` and `targetStorageMode: Abf`; each of the four observed table partitions reported `DirectQuery` and `Ready`. Do not conflate these values.
 * Workspace Admin was previously verified; XMLA Read Write and tenant XMLA integration setting were user-provided verified facts. No shared settings or permissions were modified.
-* Ownership and baseline resource evidence: `manifest.json` and ignored local `prepared/deployment-evidence.json`. The dedicated workspace had zero items before publishing; the model is now the sole discovered dataset. No report exists yet.
+* Ownership and baseline resource evidence: `manifest.json` and ignored local `prepared/deployment-evidence.json`. The dedicated workspace had zero items before publishing. The saved report is `fabricinterop_powerbi_report` (ID `3dcfdaab-7eca-4415-8bf2-ba55cec3a091`) and is bound to the existing model; the report is tracked in `manifest.json`.
 
 ## Source before publishing
 
@@ -19,8 +19,8 @@ This record contains sanitized live observations. Credentials and bearer tokens 
 * The named warehouse was observed `STOPPED` immediately before the first source query; SQL execution may have started it. It is X-Small with a 10-minute auto-stop. No additional resource was created.
 * Earlier baseline integrity checks: null keys 0, duplicate keys 0, orphans 0; four primary keys and all three fact-to-dimension foreign keys verified in Unity Catalog metadata. Sanitized creation/query evidence: `prepared/deployment-evidence.json`.
 * Source groups matched the deterministic expected reference: 365 dates, 12 months, four product categories, four customer regions. The source combined filter `2024-01-01` / `Accessories` / `Central` returned `214.71`.
-* A separate read found 0 occupied `SalesLineKey` values in 10001–10010. This is only a collision snapshot, not an exclusive-writer lock. Recheck immediately before the one-time insert.
-* Status: baseline source verification passed. Individual filter totals below are observed from the published model; no report-vs-SQL visual comparison has occurred.
+* The earlier separate read found 0 occupied `SalesLineKey` values in 10001–10010; this was only a snapshot. Immediately before the insert, the expected MCAP identity was confirmed, schema/table grants showed `ALL PRIVILEGES` only for that identity, query history showed no active warehouse queries, and the standalone collision query again returned 0.
+* The pre-append source read at `2026-11-14T19:43:02.697Z` confirmed 10,000 rows and `930299.36`. Post-append source and model totals matched exactly. The report UI observations below are rounded and attributed to the coordinating assistant's signed-in browser canvas.
 
 ## Model metadata — pre-edit only
 
@@ -41,12 +41,12 @@ This record contains sanitized live observations. Credentials and bearer tokens 
 
 ## Report and change validation
 
-* Report: none. Power BI REST and Fabric workspace report-list reads returned an empty list.
-* Report creation blocker: the embedded browser redirects to sign-in. The documented [Fabric Create Report API](https://learn.microsoft.com/en-us/rest/api/fabric/report/items/create-report) requires `Report.ReadWrite.All` or `Item.ReadWrite.All`; the verified MCAP Fabric API token has neither delegated scope. No permissions were changed.
-* User action: in a signed-in regular Power BI browser, create `fabricinterop_powerbi_report` in `fabricinterop_powerbi` using the existing model `dbxfabricinterop-fabricinterop_powerbi` (ID `39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1`), add the agreed sales card and date/category/region slicers, and save. Do not republish or edit relationships.
-* Report ID, visual totals, individual slicer comparisons, combined report filter, and report-vs-SQL status: blocked until the report is saved and its ID is recorded.
-* Batch key range: 10001–10010; last collision snapshot 0; committed rows 0; commit timestamp: none. Do not use the snapshot as concurrency control.
-* Post-change source/model counts and integrity checks: pending; no insert was run.
-* Mode: observed partitions are DirectQuery/Ready. Fresh report query/visual action: pending; no refresh or query-after-change was performed.
-* Configured visibility deadline: 900 seconds. The timer has not started because no batch commit occurred.
-* Visibility status: blocked pending report baseline, immediate collision recheck, and exclusive-writer gate.
+* Report: `fabricinterop_powerbi_report`, ID `3dcfdaab-7eca-4415-8bf2-ba55cec3a091`, in workspace `fabricinterop_powerbi` (`bdd6b268-1844-42a5-93ac-261b084fbaee`), bound to model `dbxfabricinterop-fabricinterop_powerbi` (`39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1`). `GetReportMetadata` verified the binding and returned the card visual, but did not list slicers. The coordinating assistant observed the date, category, and region slicers in the signed-in browser canvas.
+* Coordinating assistant's rounded UI observations before append: default card `930.30K`; Category=Accessories `212.94K`; Category=Accessories plus Region=East `53.39K`; Date 2024-12-01 through 2024-12-15 `40.68K`; reset showed `930.30K` and `No filters applied`.
+* Exact pre-append model values independently verified: 10,000 rows / `930299.36`; Accessories `212937.91`; Accessories plus East `53389.83`; 2024-12-01 through 2024-12-15 `40683.30` (422 rows). The report's combined date/category/region UI interaction was not captured.
+* Batch key range 10001–10010. Standalone collision query `01f1e064-2bf4-14fc-8412-006cc9f38f34` returned 0 at `2026-11-14T19:47:06.403Z`. Insert statement `01f1e064-2cb2-1830-974b-ffbb4feeeb76` succeeded; Query History records execution `19:47:07.649Z`–`19:47:10.341Z`. Delta version 21 has raw timestamp `2026-11-14 19:47:09` in SQL session timezone `Etc/UTC`, so the 900-second deadline was `20:02:09Z`.
+* Timestamp correction: the raw Delta history value was returned as an unzoned `DateTime`. Converting it with PowerShell `ToUniversalTime()` incorrectly assumed the Windows host's UTC+1 local zone and produced `18:47:09Z`. Query History and the `Etc/UTC` SQL session establish the correct commit time as `19:47:09Z`; no deadline failure occurred.
+* Post-change source at `19:48:22Z`: 10,010 FactSales rows, total `930995.27`; 10 batch rows totaling `695.91`; 10,010 distinct keys; null and duplicate fact keys 0; dimension counts 365/20/100 with no duplicate keys; all three FK orphan counts 0.
+* Fresh exact model query completed by `2026-11-14T19:52:05.744Z` (elapsed upper bound 296.7 seconds, inside the 900-second deadline): 10,010 rows / `930995.27`, matching the source. Jan 1–10 returned 287 rows / `25462.05`; Dec 1–15 returned 422 rows / `40683.30`. Category totals: Accessories `213111.04`, Apparel `221047.64`, Equipment `245050.15`, Outdoor `251786.44`. Region totals: Central `232046.37`, East `237989.45`, South `230195.63`, West `230763.82`.
+* The coordinating assistant refreshed the saved report around `19:49Z`; its default card changed from stale `930.30K` to `931.00K` and remained reset to default filters. This rounded UI read is consistent with the exact source/model total `930995.27`, but does not establish an exact card value. A separately suggested exact candidate `930996.86` is not supported by the exact source/model reads.
+* Visibility status: **PASS within 900 seconds** by exact model/source match. No further insert, model edit, relationship edit, permission change, or cloud write was performed. The signed-in UI's combined slicer interaction remains unverified.
