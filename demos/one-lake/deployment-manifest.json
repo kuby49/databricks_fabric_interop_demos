@@ -1,0 +1,23 @@
+{
+  "demo": "one-lake",
+  "prefix": "fabricinterop",
+  "status": "blocked_pending_prerequisites",
+  "live_execution": "not_started",
+  "resource_creation_performed": false,
+  "verification": {
+    "status": "not_run",
+    "observed_at": null,
+    "latency_seconds": null,
+    "notes": "No cloud access or live deployment was performed for this implementation task."
+  },
+  "created_resources": [],
+  "pending_prerequisites": [
+    "Dedicated Fabric workspace, capacity, and Azure Databricks Storage item",
+    "Supported Azure Databricks workspace with Unity Catalog and DBR 18.1+ or serverless",
+    "Explicit approval for the parent catalog and demo schema",
+    "Supported Databricks managed identity or service principal and narrowly scoped OneLake ReadWrite role",
+    "Tenant-level OneLake short-lived user-delegated SAS key-generation setting",
+    "Workspace-level OneLake user-delegated SAS authentication setting and tenant delegation/override eligibility",
+    "Unity Catalog OneLake external-location preview availability"
+  ]
+}

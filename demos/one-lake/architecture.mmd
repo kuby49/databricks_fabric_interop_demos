@@ -1,0 +1,21 @@
+flowchart LR
+    subgraph DBX["Azure Databricks — dedicated demo schema"]
+        GEN["Shared star-schema generator"]
+        NOTE["Databricks notebook<br/>create / append managed Delta tables"]
+        UC["Unity Catalog<br/>explicitly approved parent catalog"]
+        EXT["UC external location<br/>Public Preview"]
+        NOTE --> UC
+        UC --> EXT
+    end
+
+    subgraph FAB["Fabric — dedicated workspace"]
+        ST["Databricks Storage item<br/>OneLake Files"]
+        MIRROR["Azure Databricks catalog mirror"]
+        SQL["Mirrored SQL analytics endpoint<br/>read-only"]
+        ST --> MIRROR --> SQL
+    end
+
+    GEN --> NOTE
+    EXT -->|"abfss://<WorkspaceID>@onelake.dfs.fabric.microsoft.com/<DatabricksStorageID>/Files/"| ST
+    ID["Chosen Databricks managed identity / service principal<br/>OneLake ReadWrite on this Storage item only"] -. "authorized identity" .-> ST
+    FABUSER["Fabric reader<br/>workspace Viewer"] --> SQL

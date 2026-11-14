@@ -1,0 +1,19 @@
+flowchart LR
+  person["Presenter: Entra identity"] -->|authorized UI / SQL| DB
+  subgraph DB["Existing Databricks workspace / UC-enabled SQL warehouse"]
+    UC["Explicitly approved parent catalog"]
+    subgraph SC["New, independent Power BI demo schema"]
+      D["DimDate / DimProduct / DimCustomer"]
+      F["FactSales: informational FKs"]
+    end
+    UC --> SC
+    D --> F
+  end
+  subgraph FAB["New home-tenant Fabric workspace, existing approved capacity"]
+    SM["New Power BI semantic model"]
+    R["Sales report with slicers"]
+    SM --> R
+  end
+  person -->|Entra consent; Catalog Explorer Publish to Power BI| SM
+  SM -->|OAuth default; DirectQuery per query| DB
+  DB -.->|Import mode only: refresh copies data| SM

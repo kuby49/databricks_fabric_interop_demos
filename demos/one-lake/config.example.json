@@ -1,0 +1,40 @@
+{
+  "environment": {
+    "name": "MCAP"
+  },
+  "deployment": {
+    "prefix": "fabricinterop",
+    "verification_timeout_seconds": 900,
+    "sample_data": {
+      "date_rows": 365,
+      "product_rows": 20,
+      "customer_rows": 100,
+      "sales_rows": 10000,
+      "seed": 42,
+      "start_date": "2024-01-01",
+      "append_rows": 1000
+    }
+  },
+  "databricks": {
+    "workspace_name": "fabricinterop",
+    "workspace_url": "",
+    "workspace_id": "",
+    "profile": "",
+    "parent_catalog": "",
+    "parent_catalog_approved": false,
+    "sql_warehouse_id": "",
+    "schema_name": "fabricinterop_onelake",
+    "external_location_name": "fabricinterop_onelake",
+    "storage_credential_name": ""
+  },
+  "fabric": {
+    "capacity_name": "fabricadbmirror",
+    "capacity_id": "",
+    "workspace_name": "fabricinterop_onelake",
+    "workspace_id": "",
+    "databricks_storage_name": "fabricinterop_onelake_storage",
+    "databricks_storage_id": "",
+    "mirror_name": "fabricinterop_catalog_mirror",
+    "mirror_id": ""
+  }
+}

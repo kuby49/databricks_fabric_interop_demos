@@ -1,0 +1,8 @@
+{
+  "status": "not_deployed",
+  "last_updated_utc": null,
+  "environment": "MCAP",
+  "deployment_prefix": "fabricinterop",
+  "owned_resources": [],
+  "note": "No resources created. Record only exact independently verified demo-owned resource identifiers after creation; never record credentials."
+}

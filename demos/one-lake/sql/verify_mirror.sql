@@ -1,0 +1,14 @@
+-- Expected values are deployment-config-specific and must not be guessed here.
+-- Generate a complete before/after query from the same config used by the notebooks:
+--
+-- python demos\one-lake\scripts\render_mirror_verification.py --config demos\one-lake\config.json --phase before --output demos\one-lake\generated\verify_before.sql
+-- python demos\one-lake\scripts\render_mirror_verification.py --config demos\one-lake\config.json --phase after --output demos\one-lake\generated\verify_after.sql
+--
+-- The generated SQL compares totals and complete date, product-category, and
+-- customer-region aggregates against values from the shared deterministic generator.
+-- Set its UTC source-event timestamp and replace <mirror_schema> before running it
+-- in the Fabric mirrored catalog SQL analytics endpoint. The SQL reports PASS,
+-- BLOCKED (before the configured deadline), or FAIL (after the deadline). If a
+-- table is not queryable yet, classify the endpoint error as BLOCKED before the
+-- deadline or FAIL at/after it. This endpoint is read-only; never query the
+-- Databricks Storage item directly.
