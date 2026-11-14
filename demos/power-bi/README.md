@@ -1,6 +1,6 @@
 # Databricks Publish to Power BI
 
-**Status: partial deployment.** The dedicated Power BI demo Fabric workspace has been created through the Fabric API and is recorded in `manifest.json`. No Databricks schema or tables, Power BI semantic model, report, or other demo resource is recorded. This local work did not perform authentication, publishing, or further cloud operations; remaining live checks are blocked pending prerequisites and authorization.
+**Status: partial deployment; publishing is blocked before submission.** The dedicated Fabric workspace and its shared `fabricadbmirror` capacity were independently verified; the MCAP identity has workspace Admin. The isolated `dbxfabricinterop.fabricinterop_powerbi` schema and four owned Delta tables were created in the selected Databricks workspace, populated from the deterministic generator, and baseline-verified: 365 dates, 20 products, 100 customers, 10,000 sales lines, exact total `930299.36`, 365 date groups, 12 month groups, four product categories, four customer regions, and zero null/duplicate keys or orphans. PK/FK metadata was verified. Evidence is in the ignored local file `prepared/deployment-evidence.json` and resource IDs are in `manifest.json`. The Databricks **Publish to Power BI** flow was opened, but its Microsoft Entra ID popup failed with `popup_window_error: BrowserAuthError: empty_window_error: window.open returned null or undefined window object.` Retrying with the Browser canvas's visible click action reproduced the error. No publish request was submitted; no semantic model or report exists. Pre-edit relationship evidence and the remaining walkthrough are pending.
 
 The purpose is to test whether the **Databricks Catalog Explorer Publish to Power BI** feature preserves the three declared Unity Catalog relationships. Documentation describes preservation; actual behavior is **not observed** until the pre-edit inspection below. Do not substitute Power BI's manual Databricks connector, a mirror, or an imagined publishing API.
 
@@ -29,9 +29,9 @@ See [Publish documentation](https://learn.microsoft.com/en-us/azure/databricks/p
 
 The columns/types are: DimDate (`DateKey INT`, `Date DATE`, `CalendarYear INT`, `CalendarMonth INT`, `MonthName STRING`, `DayOfMonth INT`, `IsWeekend BOOLEAN`); DimProduct (`ProductKey INT`, `ProductName STRING`, `Category STRING`, `UnitPrice DECIMAL(12,2)`); DimCustomer (`CustomerKey INT`, `CustomerName STRING`, `Region STRING`, `Segment STRING`); FactSales (`SalesLineKey BIGINT`, dimension keys `INT`, `Quantity INT`, `UnitPrice DECIMAL(12,2)`, `SalesAmount DECIMAL(14,2)`). FactSales is one order line. DDL uses the shared schema metadata; all four primary keys and fact foreign keys are declared before publishing.
 
-## Future authorized deployment and safe reruns
+## Deployment record, remaining steps, and safe reruns
 
-Perform only after the separate prerequisites/authorization gate. This is a manual procedure, not an instruction to run it now.
+The workspace/schema/table creation and baseline data checks described below have been completed for this deployment; **do not rerun `01-create-and-load.sql`**. Continue at [Publish and inspect before editing](#publish-and-inspect-before-editing). The steps remain the guarded procedure for a new authorized deployment and for safe reconciliation.
 
 1. Check namespace and workspace/model/report names against actual existing resources. If a desired resource already exists but its **exact identity and ownership** cannot be proven from this demo's manifest, stop; do not adopt, replace, republish into, or delete it. Choose a new independent name and regenerate the SQL. `CREATE SCHEMA` intentionally fails rather than adopting an existing schema; there is no `CREATE OR REPLACE`, destructive overwrite, or `IF NOT EXISTS`.
 2. Verify that the existing dedicated workspace matches the name and ID recorded in `manifest.json` and is assigned to the recorded shared capacity. Do not create a duplicate workspace. The capacity, parent catalog and Databricks workspace are shared prerequisites and **not owned resources**. Record any new model and report IDs after creation too.
@@ -64,7 +64,7 @@ For each exact recorded report and model ID, verify the workspace and remove the
 
 ## Troubleshooting and limitations
 
-* Permission/consent/XMLA/warehouse/home-tenant failure: record exact sanitized error and block. Do not alter tenant, capacity, identity, shared permissions or create infrastructure as a workaround.
+* Permission/consent/XMLA/warehouse/home-tenant failure: record exact sanitized error and block. If the Microsoft Entra popup cannot open in the embedded Browser canvas, open the Databricks workspace in a regular browser session that permits popups, choose **Use with BI tools → Publish to Power BI → Connect to Microsoft Entra ID**, complete sign-in, and return to the flow. Do not substitute an undocumented publishing API. Do not alter tenant, capacity, identity, shared permissions or create infrastructure as a workaround.
 * Missing or inactive relationship: capture pre-edit metadata and mark unmet/partial; documentation indicates multiple paths can yield inactive relationships. No live behavior is asserted here.
 * Wrong mode or stale results: check per-table model storage mode, report query freshness, refresh status and credentials. Import needs a completed refresh; DirectQuery needs a new query and may encounter caching. A timeout is a failed visibility check, not permission to extend it.
 * A schema or workspace name collision is not proof of ownership. Stop and choose a new name. `03-change-batch.sql` is not replay-safe and must be guarded as described.

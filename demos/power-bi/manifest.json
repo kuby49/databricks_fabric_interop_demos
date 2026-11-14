@@ -1,6 +1,6 @@
 {
   "status": "partial",
-  "last_updated_utc": "2026-11-14T15:28:57.322Z",
+  "last_updated_utc": "2026-11-14T16:56:27Z",
   "environment": "MCAP",
   "deployment_prefix": "fabricinterop",
   "owned_resources": [
@@ -11,7 +11,90 @@
       "capacity_id": "de12195c-40d2-4bee-af60-f0d6dedfbb0f",
       "capacity_owned": false,
       "creation_evidence": "User-reported Fabric API response: HTTP 201 with matching workspace name, workspace ID, and capacity ID."
+    },
+    {
+      "kind": "databricks_schema",
+      "name": "fabricinterop_powerbi",
+      "catalog": "dbxfabricinterop",
+      "id": "2e3aa34c-875a-47a2-8cbc-c3dbc3d34feb",
+      "workspace_id": "5878076557050",
+      "creation_statement_id": "01f1e046-99a4-12dc-91d2-e8c60ce49cef",
+      "creation_evidence": "Databricks SQL Statement Execution API returned SUCCEEDED; Unity Catalog readback verified the schema ID and that its owner is the active MCAP Databricks identity."
+    },
+    {
+      "kind": "databricks_table",
+      "name": "DimDate",
+      "full_name": "dbxfabricinterop.fabricinterop_powerbi.dimdate",
+      "id": "ca0165d4-3b53-49e4-ba42-f545b4e24973",
+      "schema_id": "2e3aa34c-875a-47a2-8cbc-c3dbc3d34feb",
+      "creation_statement_id": "01f1e047-0332-11fa-bfa4-71387a4931d7",
+      "row_count": 365,
+      "creation_evidence": "Databricks SQL Statement Execution API returned SUCCEEDED; Unity Catalog readback verified DELTA format, current-identity ownership, non-null DateKey, and the dimdate_pk primary-key constraint. Baseline row count verified against deterministic local reference."
+    },
+    {
+      "kind": "databricks_table",
+      "name": "DimProduct",
+      "full_name": "dbxfabricinterop.fabricinterop_powerbi.dimproduct",
+      "id": "9bbb47d0-71c2-4723-80d2-dd7be140bc73",
+      "schema_id": "2e3aa34c-875a-47a2-8cbc-c3dbc3d34feb",
+      "creation_statement_id": "01f1e047-3220-125d-ae0d-b4eebba43fd1",
+      "row_count": 20,
+      "creation_evidence": "Databricks SQL Statement Execution API returned SUCCEEDED; Unity Catalog readback verified DELTA format, current-identity ownership, non-null ProductKey, and the dimproduct_pk primary-key constraint. Baseline row count verified against deterministic local reference."
+    },
+    {
+      "kind": "databricks_table",
+      "name": "DimCustomer",
+      "full_name": "dbxfabricinterop.fabricinterop_powerbi.dimcustomer",
+      "id": "27ad50fa-ca1c-415c-b4f6-51c134e9036f",
+      "schema_id": "2e3aa34c-875a-47a2-8cbc-c3dbc3d34feb",
+      "creation_statement_id": "01f1e047-4e25-113d-adee-b3a55aff63a9",
+      "row_count": 100,
+      "creation_evidence": "Databricks SQL Statement Execution API returned SUCCEEDED; Unity Catalog readback verified DELTA format, current-identity ownership, non-null CustomerKey, and the dimcustomer_pk primary-key constraint. Baseline row count verified against deterministic local reference."
+    },
+    {
+      "kind": "databricks_table",
+      "name": "FactSales",
+      "full_name": "dbxfabricinterop.fabricinterop_powerbi.factsales",
+      "id": "d4bd4efe-f174-4f70-8fc6-550d640a9b57",
+      "schema_id": "2e3aa34c-875a-47a2-8cbc-c3dbc3d34feb",
+      "creation_statement_id": "01f1e047-6efb-1853-9491-8e3373416f51",
+      "row_count": 10000,
+      "baseline_sales_total": "930299.36",
+      "creation_evidence": "Databricks SQL Statement Execution API returned SUCCEEDED; Unity Catalog readback verified DELTA format, current-identity ownership, non-null SalesLineKey, one primary key, and all three fact-to-dimension foreign-key constraints with correct directions. Baseline row count and total verified against deterministic local reference."
     }
   ],
-  "note": "Only the dedicated demo workspace is recorded as demo-owned. The capacity is shared and not owned. No schema, tables, semantic model, report, or other resources are recorded."
+  "data_validation": {
+    "evidence_file": "prepared/deployment-evidence.json",
+    "verified_utc": "2026-11-14T16:29:51Z",
+    "baseline_row_counts": {
+      "DimDate": 365,
+      "DimProduct": 20,
+      "DimCustomer": 100,
+      "FactSales": 10000
+    },
+    "baseline_sales_total": "930299.36",
+    "date_groups": 365,
+    "month_groups": 12,
+    "category_groups": 4,
+    "region_groups": 4,
+    "null_keys": 0,
+    "duplicate_keys": 0,
+    "orphans": 0,
+    "combined_filter": {
+      "date": "2024-01-01",
+      "category": "Accessories",
+      "region": "Central",
+      "sales_total": "214.71"
+    }
+  },
+  "deployment_blockers": [
+    {
+      "step": "Databricks Publish to Power BI authentication",
+      "status": "blocked",
+      "error": "popup_window_error: BrowserAuthError: empty_window_error: window.open returned null or undefined window object.",
+      "attempt": "Retried Connect to Microsoft Entra ID with the Browser canvas visible click action.",
+      "outcome": "The Microsoft Entra ID popup still did not open in the embedded Browser canvas. No Power BI publish request was submitted; no semantic model or report was created. Continue in a regular browser session that permits the authentication popup."
+    }
+  ],
+  "note": "The demo-owned resources are the user-created dedicated Fabric workspace, Databricks schema, and four verified populated Delta tables. The Fabric capacity, parent catalog, Databricks workspace, and SQL warehouse are shared prerequisites and not owned. No semantic model or report has been created yet."
 }
