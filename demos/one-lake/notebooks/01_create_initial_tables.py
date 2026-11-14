@@ -1,5 +1,5 @@
 # Databricks notebook source
-# This notebook is prepared for manual execution only; it has not been run.
+# This notebook is prepared for manual execution only.
 
 # COMMAND ----------
 
@@ -90,7 +90,7 @@ for table_name, rows in tables.items():
     dataframe = spark.createDataFrame(rows, schema=schemas[table_name])
     (
         dataframe.write.format("delta")
-        .mode("errorifexists")
+        .mode("error")
         .saveAsTable(full_name)
     )
     print(f"Created {full_name}: {len(rows)} rows")

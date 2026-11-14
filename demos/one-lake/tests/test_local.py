@@ -294,7 +294,7 @@ class OneLakeLocalChecks(unittest.TestCase):
         notebook = (
             DEMO / "notebooks" / "01_create_initial_tables.py"
         ).read_text(encoding="utf-8")
-        self.assertIn('.mode("errorifexists")', notebook)
+        self.assertIn('.mode("error")', notebook)
         self.assertIn('spark.sql(f"SHOW CREATE TABLE {full_name}")', notebook)
         self.assertIn("UC constraints were not confirmed", notebook)
         self.assertLess(

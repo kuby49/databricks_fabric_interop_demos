@@ -1,9 +1,15 @@
 # OneLake interoperability demo
 
-**Status: partial live deployment; blocked on a writable storage credential.**
-The dedicated Fabric workspace, Storage item, scoped identity roles, and workspace SAS
-setting are recorded in `deployment-manifest.json`. The existing Databricks storage
-credential is read-only, so the external location and downstream checks have not run.
+**Status: partial live deployment; mirror and append checks blocked.** The dedicated
+workspace, Storage item, identity roles, isolated writable credential, external
+location, and managed schema are recorded in `deployment-manifest.json`. Four
+OneLake-backed managed Delta tables were created and validated in Databricks. The
+original shared credential remains read-only and unmodified. A dedicated Fabric
+Databricks connection was approved but still requires interactive organizational
+sign-in; no unverified connection was adopted. The mirror and append have not run.
+The baseline mirror check missed its 900-second deadline and is a policy failure,
+not a measured propagation latency. See the manifest for the original commit time,
+deadline, and observed state; do not reset the clock for a later observation.
 
 This demo writes a small managed star schema from Azure Databricks into a Fabric
 Databricks Storage item's OneLake location using the documented Unity Catalog external
@@ -33,7 +39,7 @@ item directly.
 - [`scripts/cleanup_plan.py`](scripts/cleanup_plan.py) — offline, confirmation-gated
   cleanup-plan renderer; it never deletes resources or calls a cloud service.
 
-## Prerequisites (not verified here)
+## Prerequisites
 
 An administrator/operator must verify and arrange these prerequisites before any live
 execution:
@@ -53,8 +59,8 @@ execution:
    workspace and the notebook process
    working directory to be exactly `<repo>/demos/one-lake/notebooks`. The path resolver
    fails closed if that layout is absent. This working-directory behavior is documented
-   for classic Databricks Runtime 18.1+; serverless working directories are not assumed
-   to satisfy it.
+   for classic Databricks Runtime 18.1+. A serverless notebook in the deployed layout
+   also reported the required working directory and loaded the shared helpers successfully.
 3. Use an Azure Databricks access connector managed identity (or supported service
    principal) as the storage credential identity. The identity itself needs Fabric
    workspace **Viewer** access as well as the Storage item's OneLake **ReadWrite** role.
@@ -232,6 +238,11 @@ no auto-deploy path in this demo.
     deployment manifest. Do not infer latency or completion from the notebook ending.
 
 The deployment is partial; consult the manifest for created resources and blockers.
+To resume this deployment, create the approved dedicated Azure Databricks workspace
+connection with the MCAP administrator's organizational account, verify its identity
+and scoped UC privileges, then create the mirror. The baseline deadline above has
+already elapsed; a later successful query cannot turn that attempt into an on-time
+pass. Do not append until the mirror is configured and the baseline has been checked.
 
 ## Presenter walkthrough
 
@@ -259,6 +270,9 @@ The deployment is partial; consult the manifest for created resources and blocke
   key-generation and workspace authentication), delegation/override eligibility, and
   the narrowly scoped UC privileges. Do not broaden access or change tenant-wide
   settings as a first response.
+- **Serverless rejects `errorifexists`:** the observed Spark Connect runtime rejected
+  that mode before writing. The initial notebook uses its documented fail-if-exists
+  alias `error`; a live guarded rerun rejected an existing table without changing data.
 - **No default context/lakehouse:** this is not a Fabric notebook workflow; this demo
   relies on the explicit UC schema managed location. Check the Databricks schema and
   external-location configuration.
@@ -283,7 +297,7 @@ The deployment is partial; consult the manifest for created resources and blocke
 - OneLake external-location integration is Public Preview and may change or have
   availability restrictions.
 - The manifest contains resource IDs and partial deployment evidence, but no measured
-  latency or claim of successful end-to-end deployment.
+  mirror latency or claim of successful end-to-end deployment.
 - Configuration and samples contain no secrets. Keep any local real configuration out
   of version control; never put tokens or SAS values in files or logs.
 - Reruns intentionally stop on existing tables. The demo does not discover/adopt
@@ -299,5 +313,7 @@ The deployment is partial; consult the manifest for created resources and blocke
   python demos\one-lake\scripts\cleanup_plan.py --manifest demos\one-lake\deployment-manifest.json --confirm "CLEANUP ONLY RESOURCES IN MANIFEST"
   ```
 
-  This command only prints a manual review list; it never deletes anything. Do not remove
-  resources that are absent from the sanitized manifest.
+  This command only prints supported top-level kinds; it does not list the recorded
+  Databricks workspace files, notebooks, directory tree, or individual tables. Review
+  those manifest entries separately. It never deletes anything. Do not remove resources
+  that are absent from the sanitized manifest.
