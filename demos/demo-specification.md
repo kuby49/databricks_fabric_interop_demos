@@ -16,7 +16,8 @@ The first path demonstrates shared underlying storage with a catalog mirror; the
 | Setting | Default |
 |---|---|
 | Environment | MCAP |
-| Databricks workspace | `fabricinterop` |
+| Databricks workspace | `dbxfabricinterop` |
+| Selected parent catalog (approval pending) | `dbxfabricinterop` |
 | Fabric capacity | `fabricadbmirror` |
 | Deployment prefix | `fabricinterop` |
 | Verification timeout | 900 seconds |
@@ -24,7 +25,7 @@ The first path demonstrates shared underlying storage with a catalog mirror; the
 
 Each demo owns its own UC schema and Fabric workspace. All generated tables, notebooks, semantic models, reports, and related artifacts are independently named. Use verified IDs as well as display names.
 
-The existing parent catalog is **not approved for reuse**. Deployment configuration must explicitly name the parent catalog and separately set its approval flag. Neither the active/default catalog nor an existing resource may be selected implicitly or adopted based on a matching name. Additional shared identity, infrastructure, settings, permissions, or chargeable compute require separate verification and approval. Do not modify existing workloads or capacity settings.
+The selected parent catalog name is `dbxfabricinterop`; selecting it is **not approval for reuse**. Keep `parent_catalog_approved` false until the catalog's existence, suitability, and explicit approval are separately verified. Neither the active/default catalog nor an existing resource may be selected implicitly or adopted based on a matching name. Additional shared identity, infrastructure, settings, permissions, or chargeable compute require separate verification and approval. Do not modify existing workloads or capacity settings.
 
 Configuration templates contain secret references only, never tokens or secret values. Reruns may reuse resources only when ownership is established by that demo's own manifest. Cleanup is demo-scoped, manifest-bound, confirmation-gated, and never automatic.
 

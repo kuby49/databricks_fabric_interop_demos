@@ -43,10 +43,13 @@ execution:
    and workloads. Confirm that the Fabric tenant setting permits creation of Azure
    Databricks Storage items. Any additional chargeable resource use requires separate
    approval; this runbook does not create or enable resources/settings.
-2. A supported Azure Databricks workspace with Unity Catalog enabled, access to the
-   selected parent catalog, and Databricks Runtime **18.1 or later** or supported
-   serverless compute for OneLake external locations. These notebooks require the full
-   repository layout to be present in the Databricks workspace and the notebook process
+2. The selected Azure Databricks workspace is `dbxfabricinterop`; the selected parent
+   catalog name is also `dbxfabricinterop`, but its use is not approved by this selection.
+   Verify both resources and obtain separate approval for the catalog before execution.
+   The workspace must have Unity Catalog enabled and use Databricks Runtime **18.1 or
+   later** or supported serverless compute for OneLake external locations. These
+   notebooks require the full repository layout to be present in the Databricks
+   workspace and the notebook process
    working directory to be exactly `<repo>/demos/one-lake/notebooks`. The path resolver
    fails closed if that layout is absent. This working-directory behavior is documented
    for classic Databricks Runtime 18.1+; serverless working directories are not assumed
@@ -159,8 +162,8 @@ deadline and `FAIL` at/after it. Do not extend the configured deadline or claim 
 from an unexecuted query.
 
 To render the schema DDL, first fill the required values in a local `config.json` copy.
-The renderer is offline and intentionally refuses the example's empty/unapproved parent
-catalog:
+The renderer is offline and intentionally refuses to use the selected parent catalog
+until its separate approval flag is set:
 
 ```powershell
 python demos\one-lake\scripts\render_schema_sql.py --config demos\one-lake\config.json
@@ -189,9 +192,10 @@ no auto-deploy path in this demo.
    scoped UC privileges. Select/verify the file-events mode and obtain independent
    approval for any required Contributor/Member role elevation and any eventstream
    provisioning before recording the corresponding config attestations.
-2. Copy `config.example.json` to an untracked `config.json`. Fill the actual workspace
-   and Storage item IDs; enter the parent catalog explicitly and set
-   `parent_catalog_approved` to `true` only after that catalog is approved for this demo.
+2. Copy `config.example.json` to an untracked `config.json`. Verify the selected
+   Databricks workspace and catalog, fill the actual workspace and Storage item IDs, and
+   set `parent_catalog_approved` to `true` only after that catalog is explicitly approved
+   for this demo.
    Never use a default/current catalog. Do not put credentials, tokens, SAS strings, or
    secret values in config.
 3. Create the storage credential and external location by following the OneLake preview
@@ -243,7 +247,8 @@ All deployment steps above remain **unexecuted** in this repository state.
 
 ## Troubleshooting
 
-- **Renderer refuses configuration:** set a real, explicitly approved parent catalog,
+- **Renderer refuses configuration:** verify the selected parent catalog and set its
+  approval flag only after it is explicitly approved,
   provide workspace/storage item IDs, and use safe identifier names. The example is
   deliberately not deployable.
 - **External location/schema creation fails:** confirm preview eligibility, DBR/serverless

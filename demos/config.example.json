@@ -21,12 +21,12 @@
     }
   },
   "databricks": {
-    "workspace_name": "fabricinterop",
+    "workspace_name": "dbxfabricinterop",
     "workspace_url": "",
     "workspace_id": "",
     "workspace_confirmed": false,
     "profile": "",
-    "parent_catalog": "",
+    "parent_catalog": "dbxfabricinterop",
     "parent_catalog_approved": false,
     "sql_warehouse_id": "",
     "schemas": {

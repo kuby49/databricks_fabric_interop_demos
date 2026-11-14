@@ -22,14 +22,43 @@ class PreflightTests(unittest.TestCase):
 
     def test_example_config_is_locally_valid_but_catalog_is_unapproved(self):
         self.assertEqual(validate_local_config(self.config), [])
-        blockers = deployment_blockers(self.config, "all")
-        self.assertIn(
-            "Set an explicitly selected Databricks parent catalog.", blockers
+        self.assertEqual(
+            self.config["databricks"]["workspace_name"], "dbxfabricinterop"
         )
+        self.assertEqual(
+            self.config["databricks"]["parent_catalog"], "dbxfabricinterop"
+        )
+        self.assertFalse(self.config["databricks"]["parent_catalog_approved"])
+        blockers = deployment_blockers(self.config, "all")
         self.assertIn(
             "Explicitly approve use of that parent catalog in configuration.",
             blockers,
         )
+
+    def test_demo_templates_use_selected_workspace_and_catalog_without_approval(self):
+        onelake_path = CONFIG_PATH.parent / "one-lake" / "config.example.json"
+        power_bi_path = CONFIG_PATH.parent / "power-bi" / "config.example.json"
+        onelake = json.loads(onelake_path.read_text(encoding="utf-8"))
+        power_bi = json.loads(power_bi_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(onelake["databricks"]["workspace_name"], "dbxfabricinterop")
+        self.assertEqual(onelake["databricks"]["parent_catalog"], "dbxfabricinterop")
+        self.assertFalse(onelake["databricks"]["parent_catalog_approved"])
+        self.assertEqual(power_bi["databricks_workspace_name"], "dbxfabricinterop")
+        self.assertEqual(power_bi["parent_catalog"], "dbxfabricinterop")
+        self.assertFalse(power_bi["parent_catalog_approved"])
+        self.assertEqual(self.config["deployment"]["prefix"], "fabricinterop")
+        self.assertEqual(
+            self.config["databricks"]["schemas"],
+            {
+                "onelake": "fabricinterop_onelake",
+                "power_bi": "fabricinterop_powerbi",
+            },
+        )
+        self.assertEqual(onelake["deployment"]["prefix"], "fabricinterop")
+        self.assertEqual(onelake["databricks"]["schema_name"], "fabricinterop_onelake")
+        self.assertEqual(power_bi["deployment_prefix"], "fabricinterop")
+        self.assertEqual(power_bi["schema_name"], "fabricinterop_powerbi")
 
     def test_onelake_path_must_use_matching_ids(self):
         config = copy.deepcopy(self.config)
