@@ -44,8 +44,9 @@ execution:
    Databricks Storage items. Any additional chargeable resource use requires separate
    approval; this runbook does not create or enable resources/settings.
 2. The selected Azure Databricks workspace is `dbxfabricinterop`; the selected parent
-   catalog name is also `dbxfabricinterop`, but its use is not approved by this selection.
-   Verify both resources and obtain separate approval for the catalog before execution.
+   catalog name is also `dbxfabricinterop`, and its use is explicitly approved. Verify
+   the exact catalog identity before execution; this approval does not grant catalog
+   privileges or authorize other shared-resource changes.
    The workspace must have Unity Catalog enabled and use Databricks Runtime **18.1 or
    later** or supported serverless compute for OneLake external locations. These
    notebooks require the full repository layout to be present in the Databricks
@@ -163,7 +164,9 @@ from an unexecuted query.
 
 To render the schema DDL, first fill the required values in a local `config.json` copy.
 The renderer is offline and intentionally refuses to use the selected parent catalog
-until its separate approval flag is set:
+until its approval flag is set in the private config. The example template keeps that
+flag false; after verifying the catalog identity, set it true to record the existing
+approval:
 
 ```powershell
 python demos\one-lake\scripts\render_schema_sql.py --config demos\one-lake\config.json
@@ -194,8 +197,8 @@ no auto-deploy path in this demo.
    provisioning before recording the corresponding config attestations.
 2. Copy `config.example.json` to an untracked `config.json`. Verify the selected
    Databricks workspace and catalog, fill the actual workspace and Storage item IDs, and
-   set `parent_catalog_approved` to `true` only after that catalog is explicitly approved
-   for this demo.
+   set `parent_catalog_approved` to `true` to record the explicit approval for this
+   catalog. This does not approve grants, chargeable resources, or deployment.
    Never use a default/current catalog. Do not put credentials, tokens, SAS strings, or
    secret values in config.
 3. Create the storage credential and external location by following the OneLake preview
@@ -248,7 +251,7 @@ All deployment steps above remain **unexecuted** in this repository state.
 ## Troubleshooting
 
 - **Renderer refuses configuration:** verify the selected parent catalog and set its
-  approval flag only after it is explicitly approved,
+  approval flag in the private config to record the existing approval,
   provide workspace/storage item IDs, and use safe identifier names. The example is
   deliberately not deployable.
 - **External location/schema creation fails:** confirm preview eligibility, DBR/serverless

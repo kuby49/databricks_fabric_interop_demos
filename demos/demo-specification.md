@@ -17,7 +17,7 @@ The first path demonstrates shared underlying storage with a catalog mirror; the
 |---|---|
 | Environment | MCAP |
 | Databricks workspace | `dbxfabricinterop` |
-| Selected parent catalog (approval pending) | `dbxfabricinterop` |
+| Selected and approved parent catalog | `dbxfabricinterop` |
 | Fabric capacity | `fabricadbmirror` |
 | Deployment prefix | `fabricinterop` |
 | Verification timeout | 900 seconds |
@@ -25,7 +25,7 @@ The first path demonstrates shared underlying storage with a catalog mirror; the
 
 Each demo owns its own UC schema and Fabric workspace. All generated tables, notebooks, semantic models, reports, and related artifacts are independently named. Use verified IDs as well as display names.
 
-The selected parent catalog name is `dbxfabricinterop`; selecting it is **not approval for reuse**. Keep `parent_catalog_approved` false until the catalog's existence, suitability, and explicit approval are separately verified. Neither the active/default catalog nor an existing resource may be selected implicitly or adopted based on a matching name. Additional shared identity, infrastructure, settings, permissions, or chargeable compute require separate verification and approval. Do not modify existing workloads or capacity settings.
+Use of the selected parent catalog `dbxfabricinterop` is explicitly approved. The example configs retain `parent_catalog_approved: false` as conservative template defaults; after verifying the catalog identity, set the flag to `true` in the private deployment config to record this approval. This approval covers use of the named catalog only: it does not grant catalog privileges, authorize shared-resource changes, or approve chargeable compute or deployment. Neither the active/default catalog nor an existing resource may be selected implicitly or adopted based on a matching name. Additional shared identity, infrastructure, settings, permissions, or chargeable compute require separate verification and approval. Do not modify existing workloads or capacity settings.
 
 Configuration templates contain secret references only, never tokens or secret values. Reruns may reuse resources only when ownership is established by that demo's own manifest. Cleanup is demo-scoped, manifest-bound, confirmation-gated, and never automatic.
 
