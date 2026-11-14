@@ -1,6 +1,6 @@
 {
   "status": "partial",
-  "last_updated_utc": "2026-11-14T16:56:27Z",
+  "last_updated_utc": "2026-11-14T17:37:22Z",
   "environment": "MCAP",
   "deployment_prefix": "fabricinterop",
   "owned_resources": [
@@ -61,6 +61,14 @@
       "row_count": 10000,
       "baseline_sales_total": "930299.36",
       "creation_evidence": "Databricks SQL Statement Execution API returned SUCCEEDED; Unity Catalog readback verified DELTA format, current-identity ownership, non-null SalesLineKey, one primary key, and all three fact-to-dimension foreign-key constraints with correct directions. Baseline row count and total verified against deterministic local reference."
+    },
+    {
+      "kind": "powerbi_semantic_model",
+      "name": "dbxfabricinterop-fabricinterop_powerbi",
+      "configured_name": "fabricinterop_powerbi_model",
+      "id": "39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1",
+      "workspace_id": "bdd6b268-1844-42a5-93ac-261b084fbaee",
+      "creation_evidence": "After the user reported completing Databricks Publish to Power BI, the MCAP Power BI REST GET /groups/{workspaceId}/datasets returned this model as the only dataset in the dedicated workspace. Power BI modeling ConnectFabric by ID resolved the same actual name. The actual name differs from the configured expected name; preserve the observed identity and do not rename before walkthrough completion."
     }
   ],
   "data_validation": {
@@ -87,14 +95,113 @@
       "sales_total": "214.71"
     }
   },
+  "published_model_validation": {
+    "verified_before_manual_edits": true,
+    "model_id": "39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1",
+    "model_name": "dbxfabricinterop-fabricinterop_powerbi",
+    "configured_model_name": "fabricinterop_powerbi_model",
+    "workspace_id": "bdd6b268-1844-42a5-93ac-261b084fbaee",
+    "discovery_evidence": "Power BI REST GET /groups/{workspaceId}/datasets found this single model; GET /groups/{workspaceId}/reports returned an empty list.",
+    "capture_time_note": "Pre-edit model metadata was verified in the prior session segment; its exact UTC capture time was not retained in the session checkpoint.",
+    "model_default_mode": "Import",
+    "dataset_target_storage_mode": "Abf",
+    "storage_mode_note": "The model default and dataset targetStorageMode are recorded verbatim and are not treated as the observed per-table mode. Power BI modeling partition inspection reported DirectQuery and Ready for each table.",
+    "tables": [
+      {"name": "dimdate", "partition_mode": "DirectQuery", "partition_status": "Ready"},
+      {"name": "dimproduct", "partition_mode": "DirectQuery", "partition_status": "Ready"},
+      {"name": "dimcustomer", "partition_mode": "DirectQuery", "partition_status": "Ready"},
+      {"name": "factsales", "partition_mode": "DirectQuery", "partition_status": "Ready"}
+    ],
+    "relationships": [
+      {
+        "from": "factsales.DateKey",
+        "to": "dimdate.DateKey",
+        "cardinality": "Many-to-One",
+        "active": true,
+        "cross_filter_direction": "OneDirection"
+      },
+      {
+        "from": "factsales.ProductKey",
+        "to": "dimproduct.ProductKey",
+        "cardinality": "Many-to-One",
+        "active": true,
+        "cross_filter_direction": "OneDirection"
+      },
+      {
+        "from": "factsales.CustomerKey",
+        "to": "dimcustomer.CustomerKey",
+        "cardinality": "Many-to-One",
+        "active": true,
+        "cross_filter_direction": "OneDirection"
+      }
+    ],
+    "dax_baseline": {
+      "fact_sales_rows": 10000,
+      "sales_total": "930299.36",
+      "date_groups": 365,
+      "month_groups": 12,
+      "category_groups": 4,
+      "region_groups": 4,
+      "aggregate_mismatches": 0,
+      "filters": [
+        {"date": "2024-01-01", "sales_total": "2436.41"},
+        {"category": "Accessories", "sales_total": "212937.91"},
+        {"region": "Central", "sales_total": "231873.24"},
+        {"date": "2024-01-01", "category": "Accessories", "region": "Central", "sales_total": "214.71"}
+      ]
+    }
+  },
+  "source_validation": {
+    "verified_utc": "2026-11-14T17:37:22.034Z",
+    "tenant_id": "4526cee1-4399-4e4b-9134-46fabd583527",
+    "warehouse_id": "f37863b7242d0931",
+    "warehouse_name": "fabricinterop-powerbi-demo",
+    "warehouse_state_observed_before_first_source_query": "STOPPED",
+    "warehouse_auto_stop_minutes": 10,
+    "identity_verified": true,
+    "identity_evidence": "Databricks current_user() matched the expected MCAP admin identity; the principal value is omitted from this manifest.",
+    "row_counts": {"DimDate": 365, "DimProduct": 20, "DimCustomer": 100, "FactSales": 10000},
+    "sales_total": "930299.36",
+    "change_batch_key_range": {"first": 10001, "last": 10010, "occupied_rows": 0},
+    "statement_id": "01f1e052-0bb8-168e-8654-6d33e779a77a",
+    "note": "Read-only source recheck. The zero collision result is a snapshot, not an exclusive-writer guarantee; recheck immediately before any one-time insert."
+  },
+  "report_validation": {
+    "status": "blocked_not_created",
+    "expected_name": "fabricinterop_powerbi_report",
+    "workspace_id": "bdd6b268-1844-42a5-93ac-261b084fbaee",
+    "model_id": "39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1",
+    "reports_found": 0,
+    "blocker": "The embedded Power BI browser redirects to sign-in. The documented Fabric Create Report API requires Report.ReadWrite.All or Item.ReadWrite.All; the verified MCAP Fabric API token has neither delegated scope. No permissions were changed."
+  },
   "deployment_blockers": [
     {
       "step": "Databricks Publish to Power BI authentication",
-      "status": "blocked",
+      "status": "resolved_by_model_verification",
       "error": "popup_window_error: BrowserAuthError: empty_window_error: window.open returned null or undefined window object.",
       "attempt": "Retried Connect to Microsoft Entra ID with the Browser canvas visible click action.",
-      "outcome": "The Microsoft Entra ID popup still did not open in the embedded Browser canvas. No Power BI publish request was submitted; no semantic model or report was created. Continue in a regular browser session that permits the authentication popup."
+      "outcome": "The Microsoft Entra ID popup did not open in the embedded Browser canvas. The user subsequently reported completing the publish flow in a regular browser; the resulting model was independently identified and its tables, relationships, and baseline queried through supported APIs."
+    },
+    {
+      "step": "Semantic model discovery and pre-edit relationship capture",
+      "status": "verified",
+      "attempt": "Used the verified MCAP Azure CLI identity for Power BI REST dataset/report reads and Power BI modeling APIs by the returned model ID; global MCP configuration was not changed.",
+      "outcome": "Captured the actual model ID/name, four DirectQuery Ready partitions, three active many-to-one one-direction relationships, and baseline DAX results before manual edits."
+    },
+    {
+      "step": "Power BI report creation and walkthrough",
+      "status": "blocked",
+      "attempt": "Power BI and Fabric workspace report-list reads returned no reports. The documented Fabric Create Report API was checked; the current MCAP token lacks both accepted delegated write scopes.",
+      "outcome": "No report was created, no report visuals or slicers were tested, and no model relationships were edited. No shared permissions or settings were changed.",
+      "required_action": "In a signed-in regular Power BI browser, create fabricinterop_powerbi_report in workspace fabricinterop_powerbi using the existing model dbxfabricinterop-fabricinterop_powerbi (ID 39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1), add the agreed sales card and date/category/region slicers, and save. Do not republish or edit relationships."
+    },
+    {
+      "step": "Source-change batch and visibility check",
+      "status": "blocked",
+      "attempt": "Read-only Databricks SQL recheck verified the baseline and found zero occupied keys in the proposed 10001-10010 batch range.",
+      "outcome": "The insert was not run. The required report walkthrough is incomplete, and the collision snapshot does not establish exclusive writer access. Post-change source/model checks and the configured 900-second visibility test remain pending.",
+      "required_action": "After the report baseline is saved, recheck identity, privileges, warehouse state, batch-key collisions, and exclusive writer access; then run the prepared insert exactly once and perform the timed post-change checks."
     }
   ],
-  "note": "The demo-owned resources are the user-created dedicated Fabric workspace, Databricks schema, and four verified populated Delta tables. The Fabric capacity, parent catalog, Databricks workspace, and SQL warehouse are shared prerequisites and not owned. No semantic model or report has been created yet."
+  "note": "Verified demo-owned resources are the user-created dedicated Fabric workspace, Databricks schema, four populated Delta tables, and published semantic model. The Fabric capacity, parent catalog, Databricks workspace, and SQL warehouse are shared prerequisites and not owned. No report exists yet. The named warehouse was observed STOPPED immediately before the first read-only source query; SQL execution may have started it. It has a 10-minute auto-stop. No additional resource, permission, or shared-setting change was made."
 }
