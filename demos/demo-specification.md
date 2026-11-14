@@ -77,7 +77,7 @@ Use the SQL analytics endpoint for Fabric validation. If Fabric Spark is used in
 
 ### Required sequence
 
-1. Create the dedicated UC schema and Fabric workspace after prerequisite checks and approvals.
+1. Create the dedicated UC schema `fabricinterop_powerbi` using the selected catalog's managed storage, and create the Fabric workspace after prerequisite checks and approvals. Use of managed storage for this separate Power BI schema is explicitly approved; this does not authorize changing storage configuration or expanding permissions.
 2. Create and populate the independent four-table star schema. Declare dimension primary keys and the three `FactSales` foreign keys before publishing. Independently validate key uniqueness and referential integrity.
 3. From Databricks Catalog Explorer, select the existing Unity Catalog-enabled SQL warehouse and publish the selected schema using **Use with BI tools → Publish to Power BI workspace**. Publish a new semantic model to the specified home-tenant workspace. Default to **DirectQuery**; use **Import** only when explicitly configured. Record authentication and publishing options.
 4. Before manual model edits, capture the generated semantic model's tables and all relationship metadata: source/target columns, cardinality, active status, and filter direction. Databricks documentation says foreign-key relationships are preserved, but the demo's result must be observed and reported. Power BI can deactivate relationships when multiple paths between tables exist.
@@ -88,7 +88,7 @@ If automatic relationship propagation does not meet the objective, report it as 
 
 ### Prerequisite gate
 
-Verify UC-enabled compute, a Databricks SQL warehouse, a Power BI Premium/PPU/Fabric capacity with XMLA Read Write, home-tenant workspace access, Entra consent for the Databricks Dataset Publishing Integration, authentication/credentials, licenses, and the selected semantic-model storage mode. If an essential capability is unavailable, report the exact blocker and proceed with the other independent demo where feasible; do not silently substitute a manual connector or different integration.
+Verify UC-enabled compute, a Databricks SQL warehouse, a Power BI Premium/PPU/Fabric capacity with XMLA Read Write, home-tenant workspace access, Entra consent for the Databricks Dataset Publishing Integration, authentication/credentials, licenses, and the selected semantic-model storage mode. The user has approved managed-storage use only for the separate `fabricinterop_powerbi` schema; verify required existing UC privileges without changing grants or storage configuration. All other permission, infrastructure, and deployment gates remain in force. If an essential capability is unavailable, report the exact blocker and proceed with the other independent demo where feasible; do not silently substitute a manual connector or different integration.
 
 ## Local implementation, evidence, and completion
 
