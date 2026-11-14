@@ -1,9 +1,9 @@
 # OneLake interoperability demo
 
-**Status: implementation prepared; live deployment is blocked pending prerequisites.**
-Nothing in this directory has created or changed an Azure, Databricks, Fabric, or Power
-BI resource, identity, permission, or shared setting. `deployment-manifest.json` is the
-record of that state.
+**Status: partial live deployment; blocked on a writable storage credential.**
+The dedicated Fabric workspace, Storage item, scoped identity roles, and workspace SAS
+setting are recorded in `deployment-manifest.json`. The existing Databricks storage
+credential is read-only, so the external location and downstream checks have not run.
 
 This demo writes a small managed star schema from Azure Databricks into a Fabric
 Databricks Storage item's OneLake location using the documented Unity Catalog external
@@ -175,7 +175,7 @@ python demos\one-lake\scripts\render_schema_sql.py --config demos\one-lake\confi
 Review the emitted SQL and URL before running it manually in the intended Databricks
 workspace. The SQL renderer does not execute SQL.
 
-## Manual deployment sequence (unexecuted)
+## Manual deployment sequence
 
 Do not treat these instructions, scripts, or notebooks as deployment output. There is
 no auto-deploy path in this demo.
@@ -231,7 +231,7 @@ no auto-deploy path in this demo.
     Record observed times, counts, and outcomes only after actual execution in a reviewed
     deployment manifest. Do not infer latency or completion from the notebook ending.
 
-All deployment steps above remain **unexecuted** in this repository state.
+The deployment is partial; consult the manifest for created resources and blockers.
 
 ## Presenter walkthrough
 
@@ -282,8 +282,8 @@ All deployment steps above remain **unexecuted** in this repository state.
 
 - OneLake external-location integration is Public Preview and may change or have
   availability restrictions.
-- This directory contains no live results, resource IDs, measured latencies, or claims
-  of successful deployment.
+- The manifest contains resource IDs and partial deployment evidence, but no measured
+  latency or claim of successful end-to-end deployment.
 - Configuration and samples contain no secrets. Keep any local real configuration out
   of version control; never put tokens or SAS values in files or logs.
 - Reruns intentionally stop on existing tables. The demo does not discover/adopt
@@ -292,9 +292,8 @@ All deployment steps above remain **unexecuted** in this repository state.
   no concurrent or repeated notebook run has been exercised against a live Delta table.
 - Cleanup is a manual operation, never automatic. Review the sanitized manifest, require
   the exact confirmation shown by the offline cleanup planner, and manually remove only
-  resources explicitly recorded as created by this demo. The current manifest is empty,
-  so there is nothing to clean up. If the manifest is later updated after a real run,
-  first verify every entry and then run:
+  resources explicitly recorded as created by this demo. First verify every entry and
+  then run:
 
   ```powershell
   python demos\one-lake\scripts\cleanup_plan.py --manifest demos\one-lake\deployment-manifest.json --confirm "CLEANUP ONLY RESOURCES IN MANIFEST"

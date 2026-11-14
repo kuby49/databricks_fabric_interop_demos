@@ -1,23 +1,75 @@
 {
   "demo": "one-lake",
   "prefix": "fabricinterop",
-  "status": "blocked_pending_prerequisites",
-  "live_execution": "not_started",
-  "resource_creation_performed": false,
+  "status": "blocked_read_only_storage_credential",
+  "live_execution": "partial",
+  "resource_creation_performed": true,
   "verification": {
-    "status": "not_run",
-    "observed_at": null,
+    "status": "blocked",
+    "observed_at": "2026-11-14T16:10:58Z",
     "latency_seconds": null,
-    "notes": "No cloud access or live deployment was performed for this implementation task."
+    "notes": "Databricks rejected external-location creation with READ_ONLY_STORAGE_CREDENTIAL. Credential read-back confirmed read_only=true; subsequent location read returned 404. Schema creation, data loading, mirroring, and acceptance checks have not run."
   },
-  "created_resources": [],
+  "access_changes": [
+    {
+      "type": "Fabric workspace role",
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "principal_id": "afcfa273-c0c4-4a70-9e09-232a5502cec4",
+      "role": "Viewer",
+      "assigned_at_utc": "2026-11-14T15:57:52Z"
+    },
+    {
+      "type": "OneLake data access role",
+      "name": "DatabricksManagedIdentity",
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "item_id": "4d673648-4185-498a-a23d-f4f68a75a3ee",
+      "principal_id": "afcfa273-c0c4-4a70-9e09-232a5502cec4",
+      "role_id": "3dc99312-77ab-4df9-9c84-f69ceba9c739",
+      "permission": "ReadWrite",
+      "assigned_at_utc": "2026-11-14T16:05:50Z",
+      "verification": "Fabric dataAccessRoles read-back returned one item-wide ReadWrite role with this identity as its sole member."
+    }
+  ],
+  "workspace_settings": {
+    "onelake_sas_authentication": {
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "status": "enabled",
+      "scope": "all workspace users",
+      "evidence": "Fabric workspace delegated settings displayed On and Enabled for all users after reopening on 2026-11-14 UTC; tenant-wide authentication default was not changed."
+    }
+  },
+  "prerequisite_evidence": {
+    "tenant_id": "4526cee1-4399-4e4b-9134-46fabd583527",
+    "capacity": "fabricadbmirror (Active)",
+    "catalog": "dbxfabricinterop",
+    "existing_storage_credential": "onelake_storage_cred (read_only=true)",
+    "access_connector": "dbx-access-connector-onelake",
+    "tenant_sas_key_generation": "enabled",
+    "tenant_sas_authentication_default": "disabled; delegated to workspace",
+    "databricks_storage_item_creation": "enabled"
+  },
+  "created_resources": [
+    {
+      "kind": "fabric_workspace",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake",
+      "id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "capacity_id": "de12195c-40d2-4bee-af60-f0d6dedfbb0f",
+      "created_at_utc": "2026-11-14T15:55:25Z"
+    },
+    {
+      "kind": "fabric_storage_item",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake_storage",
+      "id": "4d673648-4185-498a-a23d-f4f68a75a3ee",
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "created_at_utc": "2026-11-14T15:56:03Z"
+    }
+  ],
   "pending_prerequisites": [
-    "Dedicated Fabric workspace, capacity, and Azure Databricks Storage item",
-    "Supported Azure Databricks workspace with Unity Catalog and DBR 18.1+ or serverless",
-    "Explicit approval for the parent catalog and demo schema",
-    "Supported Databricks managed identity or service principal and narrowly scoped OneLake ReadWrite role",
-    "Tenant-level OneLake short-lived user-delegated SAS key-generation setting",
-    "Workspace-level OneLake user-delegated SAS authentication setting and tenant delegation/override eligibility",
-    "Unity Catalog OneLake external-location preview availability"
+    "A writable storage credential for the approved managed identity; creation or alteration is not authorized",
+    "Create and verify the external location with effective file events disabled",
+    "Verify serverless notebook availability and required Unity Catalog privileges",
+    "Create and populate the demo schema and verify the Fabric mirrored catalog"
   ]
 }

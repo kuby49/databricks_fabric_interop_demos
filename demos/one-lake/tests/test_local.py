@@ -308,6 +308,8 @@ class OneLakeLocalChecks(unittest.TestCase):
 
     def test_cleanup_plan_is_manifest_scoped_and_confirmation_is_required(self):
         manifest = json.loads((DEMO / "deployment-manifest.json").read_text(encoding="utf-8"))
+        manifest["resource_creation_performed"] = False
+        manifest["created_resources"] = []
         self.assertEqual(CLEANUP_VARS["eligible_resources"](manifest), [])
         self.assertEqual(
             CLEANUP_VARS["CONFIRMATION"], "CLEANUP ONLY RESOURCES IN MANIFEST"
