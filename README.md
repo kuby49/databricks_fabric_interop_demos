@@ -13,7 +13,7 @@ These are not interchangeable paths: the OneLake demo uses shared underlying Del
 
 ## Status
 
-The local source, shared deterministic star-schema generator, and local checks are prepared here. No Azure, Databricks, Fabric, or Power BI resource has been created, changed, deployed, or tested by this work. Live execution remains gated on independently verified prerequisites and explicit approval for any additional chargeable or shared resources.
+The local source, shared deterministic star-schema generator, and local checks are prepared here. The user has created the dedicated Power BI demo Fabric workspace; it is recorded in [`demos/power-bi/manifest.json`](demos/power-bi/manifest.json). No other demo resources have been created, and no tables, semantic model, report, or live acceptance checks are claimed. Remaining live execution is gated on independently verified prerequisites and explicit approval for additional chargeable or shared resources.
 
 The selected Databricks workspace and Unity Catalog parent catalog are both named `dbxfabricinterop`; use of that catalog is explicitly approved. The example config keeps `parent_catalog_approved` set to `false` as a conservative template default. When preparing a private deployment config, verify the catalog identity and set the flag to `true` to record the existing approval. This does not grant catalog privileges or approve other shared changes, chargeable resources, or deployment. The deployment gate still requires explicit Databricks/Fabric workspace confirmations and per-demo chargeable-resource approvals; the Power BI Fabric and Power BI workspace IDs must match, and its capacity ID must be set. These are operator attestations, not live checks. Never add credentials or secret values to the config.
 

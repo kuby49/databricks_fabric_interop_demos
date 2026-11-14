@@ -1,8 +1,17 @@
 {
-  "status": "not_deployed",
-  "last_updated_utc": null,
+  "status": "partial",
+  "last_updated_utc": "2026-11-14T15:28:57.322Z",
   "environment": "MCAP",
   "deployment_prefix": "fabricinterop",
-  "owned_resources": [],
-  "note": "No resources created. Record only exact independently verified demo-owned resource identifiers after creation; never record credentials."
+  "owned_resources": [
+    {
+      "kind": "fabric_workspace",
+      "name": "fabricinterop_powerbi",
+      "id": "bdd6b268-1844-42a5-93ac-261b084fbaee",
+      "capacity_id": "de12195c-40d2-4bee-af60-f0d6dedfbb0f",
+      "capacity_owned": false,
+      "creation_evidence": "User-reported Fabric API response: HTTP 201 with matching workspace name, workspace ID, and capacity ID."
+    }
+  ],
+  "note": "Only the dedicated demo workspace is recorded as demo-owned. The capacity is shared and not owned. No schema, tables, semantic model, report, or other resources are recorded."
 }
