@@ -1,0 +1,33 @@
+{
+  "environment": "MCAP",
+  "tenant_id": "4526cee1-4399-4e4b-9134-46fabd583527",
+  "subscription_id": "",
+  "deployment_prefix": "fabricinterop",
+  "databricks_workspace_name": "dbxfabricinterop",
+  "databricks_workspace_url": "",
+  "databricks_workspace_id": "",
+  "parent_catalog": "dbxfabricinterop",
+  "parent_catalog_approved": false,
+  "schema_name": "fabricinterop_powerbi",
+  "sql_warehouse_id": "",
+  "fabric_capacity_name": "fabricadbmirror",
+  "fabric_capacity_id": "",
+  "fabric_workspace_name": "fabricinterop_powerbi",
+  "fabric_workspace_id": "",
+  "semantic_model_name": "fabricinterop_powerbi_model",
+  "report_name": "fabricinterop_powerbi_report",
+  "storage_mode": "DirectQuery",
+  "import_explicitly_approved": false,
+  "authentication_method": "OAuth",
+  "secret_reference": "",
+  "verification_timeout_seconds": 900,
+  "sample_data": {
+    "date_rows": 365,
+    "product_rows": 20,
+    "customer_rows": 100,
+    "sales_rows": 10000,
+    "seed": 42,
+    "start_date": "2024-01-01"
+  },
+  "change_batch_rows": 10
+}

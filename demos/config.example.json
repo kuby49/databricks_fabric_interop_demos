@@ -1,0 +1,80 @@
+{
+  "environment": {
+    "name": "MCAP",
+    "tenant_id": "4526cee1-4399-4e4b-9134-46fabd583527",
+    "subscription_id": ""
+  },
+  "deployment": {
+    "prefix": "fabricinterop",
+    "verification_timeout_seconds": 900,
+    "approvals": {
+      "onelake_chargeable_resource_use": false,
+      "power_bi_chargeable_resource_use": false
+    },
+    "sample_data": {
+      "date_rows": 365,
+      "product_rows": 20,
+      "customer_rows": 100,
+      "sales_rows": 10000,
+      "seed": 42,
+      "start_date": "2024-01-01"
+    }
+  },
+  "databricks": {
+    "workspace_name": "dbxfabricinterop",
+    "workspace_url": "",
+    "workspace_id": "",
+    "workspace_confirmed": false,
+    "profile": "",
+    "parent_catalog": "dbxfabricinterop",
+    "parent_catalog_approved": false,
+    "sql_warehouse_id": "",
+    "schemas": {
+      "onelake": "fabricinterop_onelake",
+      "power_bi": "fabricinterop_powerbi"
+    }
+  },
+  "fabric": {
+    "capacity_name": "fabricadbmirror",
+    "capacity_id": "",
+    "workspaces": {
+      "onelake": {
+        "name": "fabricinterop_onelake",
+        "id": "",
+        "confirmed": false
+      },
+      "power_bi": {
+        "name": "fabricinterop_powerbi",
+        "id": "",
+        "confirmed": false
+      }
+    }
+  },
+  "onelake": {
+    "storage_item_name": "fabricinterop_onelake_storage",
+    "storage_item_id": "",
+    "storage_credential_name": "",
+    "external_location_name": "",
+    "abfss_url": "",
+    "identity_reference": "",
+    "tenant_short_lived_sas_key_generation": "unknown",
+    "workspace_user_delegated_sas_authentication": "unknown",
+    "tenant_setting_change_approved": false,
+    "file_events_mode": "unverified",
+    "file_event_role_escalation_approved": false,
+    "file_eventstream_provisioning_approved": false,
+    "fabric_mirror_name": "",
+    "fabric_mirror_id": ""
+  },
+  "power_bi": {
+    "workspace_id": "",
+    "semantic_model_name": "fabricinterop_powerbi_model",
+    "semantic_model_storage_mode": "DirectQuery",
+    "authentication_method": "OAuth",
+    "report_name": "fabricinterop_powerbi_report"
+  },
+  "auth": {
+    "databricks_method": "profile",
+    "secret_references": {}
+  }
+}

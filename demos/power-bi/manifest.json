@@ -1,0 +1,311 @@
+{
+  "status": "partial",
+  "last_updated_utc": "2026-11-14T19:52:05.744Z",
+  "environment": "MCAP",
+  "deployment_prefix": "fabricinterop",
+  "owned_resources": [
+    {
+      "kind": "fabric_workspace",
+      "name": "fabricinterop_powerbi",
+      "id": "bdd6b268-1844-42a5-93ac-261b084fbaee",
+      "capacity_id": "de12195c-40d2-4bee-af60-f0d6dedfbb0f",
+      "capacity_owned": false,
+      "creation_evidence": "User-reported Fabric API response: HTTP 201 with matching workspace name, workspace ID, and capacity ID."
+    },
+    {
+      "kind": "databricks_schema",
+      "name": "fabricinterop_powerbi",
+      "catalog": "dbxfabricinterop",
+      "id": "2e3aa34c-875a-47a2-8cbc-c3dbc3d34feb",
+      "workspace_id": "5878076557050",
+      "creation_statement_id": "01f1e046-99a4-12dc-91d2-e8c60ce49cef",
+      "creation_evidence": "Databricks SQL Statement Execution API returned SUCCEEDED; Unity Catalog readback verified the schema ID and that its owner is the active MCAP Databricks identity."
+    },
+    {
+      "kind": "databricks_table",
+      "name": "DimDate",
+      "full_name": "dbxfabricinterop.fabricinterop_powerbi.dimdate",
+      "id": "ca0165d4-3b53-49e4-ba42-f545b4e24973",
+      "schema_id": "2e3aa34c-875a-47a2-8cbc-c3dbc3d34feb",
+      "creation_statement_id": "01f1e047-0332-11fa-bfa4-71387a4931d7",
+      "row_count": 365,
+      "creation_evidence": "Databricks SQL Statement Execution API returned SUCCEEDED; Unity Catalog readback verified DELTA format, current-identity ownership, non-null DateKey, and the dimdate_pk primary-key constraint. Baseline row count verified against deterministic local reference."
+    },
+    {
+      "kind": "databricks_table",
+      "name": "DimProduct",
+      "full_name": "dbxfabricinterop.fabricinterop_powerbi.dimproduct",
+      "id": "9bbb47d0-71c2-4723-80d2-dd7be140bc73",
+      "schema_id": "2e3aa34c-875a-47a2-8cbc-c3dbc3d34feb",
+      "creation_statement_id": "01f1e047-3220-125d-ae0d-b4eebba43fd1",
+      "row_count": 20,
+      "creation_evidence": "Databricks SQL Statement Execution API returned SUCCEEDED; Unity Catalog readback verified DELTA format, current-identity ownership, non-null ProductKey, and the dimproduct_pk primary-key constraint. Baseline row count verified against deterministic local reference."
+    },
+    {
+      "kind": "databricks_table",
+      "name": "DimCustomer",
+      "full_name": "dbxfabricinterop.fabricinterop_powerbi.dimcustomer",
+      "id": "27ad50fa-ca1c-415c-b4f6-51c134e9036f",
+      "schema_id": "2e3aa34c-875a-47a2-8cbc-c3dbc3d34feb",
+      "creation_statement_id": "01f1e047-4e25-113d-adee-b3a55aff63a9",
+      "row_count": 100,
+      "creation_evidence": "Databricks SQL Statement Execution API returned SUCCEEDED; Unity Catalog readback verified DELTA format, current-identity ownership, non-null CustomerKey, and the dimcustomer_pk primary-key constraint. Baseline row count verified against deterministic local reference."
+    },
+    {
+      "kind": "databricks_table",
+      "name": "FactSales",
+      "full_name": "dbxfabricinterop.fabricinterop_powerbi.factsales",
+      "id": "d4bd4efe-f174-4f70-8fc6-550d640a9b57",
+      "schema_id": "2e3aa34c-875a-47a2-8cbc-c3dbc3d34feb",
+      "creation_statement_id": "01f1e047-6efb-1853-9491-8e3373416f51",
+      "row_count": 10000,
+      "baseline_sales_total": "930299.36",
+      "creation_evidence": "Databricks SQL Statement Execution API returned SUCCEEDED; Unity Catalog readback verified DELTA format, current-identity ownership, non-null SalesLineKey, one primary key, and all three fact-to-dimension foreign-key constraints with correct directions. Baseline row count and total verified against deterministic local reference."
+    },
+    {
+      "kind": "powerbi_semantic_model",
+      "name": "dbxfabricinterop-fabricinterop_powerbi",
+      "configured_name": "fabricinterop_powerbi_model",
+      "id": "39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1",
+      "workspace_id": "bdd6b268-1844-42a5-93ac-261b084fbaee",
+      "creation_evidence": "After the user reported completing Databricks Publish to Power BI, the MCAP Power BI REST GET /groups/{workspaceId}/datasets returned this model as the only dataset in the dedicated workspace. Power BI modeling ConnectFabric by ID resolved the same actual name. The actual name differs from the configured expected name; preserve the observed identity and do not rename before walkthrough completion."
+    },
+    {
+      "kind": "powerbi_report",
+      "name": "fabricinterop_powerbi_report",
+      "id": "3dcfdaab-7eca-4415-8bf2-ba55cec3a091",
+      "workspace_id": "bdd6b268-1844-42a5-93ac-261b084fbaee",
+      "semantic_model_id": "39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1",
+      "creation_evidence": "The coordinating assistant's signed-in Power BI canvas confirmed the report was saved; FabricIQ GetReportMetadata verified its workspace and semantic-model binding."
+    }
+  ],
+  "data_validation": {
+    "evidence_file": "prepared/deployment-evidence.json",
+    "verified_utc": "2026-11-14T16:29:51Z",
+    "baseline_row_counts": {
+      "DimDate": 365,
+      "DimProduct": 20,
+      "DimCustomer": 100,
+      "FactSales": 10000
+    },
+    "baseline_sales_total": "930299.36",
+    "date_groups": 365,
+    "month_groups": 12,
+    "category_groups": 4,
+    "region_groups": 4,
+    "null_keys": 0,
+    "duplicate_keys": 0,
+    "orphans": 0,
+    "combined_filter": {
+      "date": "2024-01-01",
+      "category": "Accessories",
+      "region": "Central",
+      "sales_total": "214.71"
+    }
+  },
+  "published_model_validation": {
+    "verified_before_manual_edits": true,
+    "model_id": "39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1",
+    "model_name": "dbxfabricinterop-fabricinterop_powerbi",
+    "configured_model_name": "fabricinterop_powerbi_model",
+    "workspace_id": "bdd6b268-1844-42a5-93ac-261b084fbaee",
+    "discovery_evidence": "At model-discovery time before report creation, Power BI REST GET /groups/{workspaceId}/datasets found this single model and GET /groups/{workspaceId}/reports returned an empty list.",
+    "capture_time_note": "Pre-edit model metadata was verified in the prior session segment; its exact UTC capture time was not retained in the session checkpoint.",
+    "model_default_mode": "Import",
+    "dataset_target_storage_mode": "Abf",
+    "storage_mode_note": "The model default and dataset targetStorageMode are recorded verbatim and are not treated as the observed per-table mode. Power BI modeling partition inspection reported DirectQuery and Ready for each table.",
+    "tables": [
+      {"name": "dimdate", "partition_mode": "DirectQuery", "partition_status": "Ready"},
+      {"name": "dimproduct", "partition_mode": "DirectQuery", "partition_status": "Ready"},
+      {"name": "dimcustomer", "partition_mode": "DirectQuery", "partition_status": "Ready"},
+      {"name": "factsales", "partition_mode": "DirectQuery", "partition_status": "Ready"}
+    ],
+    "relationships": [
+      {
+        "from": "factsales.DateKey",
+        "to": "dimdate.DateKey",
+        "cardinality": "Many-to-One",
+        "active": true,
+        "cross_filter_direction": "OneDirection"
+      },
+      {
+        "from": "factsales.ProductKey",
+        "to": "dimproduct.ProductKey",
+        "cardinality": "Many-to-One",
+        "active": true,
+        "cross_filter_direction": "OneDirection"
+      },
+      {
+        "from": "factsales.CustomerKey",
+        "to": "dimcustomer.CustomerKey",
+        "cardinality": "Many-to-One",
+        "active": true,
+        "cross_filter_direction": "OneDirection"
+      }
+    ],
+    "dax_baseline": {
+      "fact_sales_rows": 10000,
+      "sales_total": "930299.36",
+      "date_groups": 365,
+      "month_groups": 12,
+      "category_groups": 4,
+      "region_groups": 4,
+      "aggregate_mismatches": 0,
+      "filters": [
+        {"date": "2024-01-01", "sales_total": "2436.41"},
+        {"category": "Accessories", "sales_total": "212937.91"},
+        {"region": "Central", "sales_total": "231873.24"},
+        {"date": "2024-01-01", "category": "Accessories", "region": "Central", "sales_total": "214.71"}
+      ]
+    },
+    "dax_after_change": {
+      "verified_by_utc": "2026-11-14T19:52:05.744Z",
+      "verification_elapsed_upper_bound_seconds": 296.7,
+      "within_900_second_deadline": true,
+      "fact_sales_rows": 10010,
+      "sales_total": "930995.27",
+      "source_total_matched": true,
+      "date_ranges": [
+        {"start": "2024-01-01", "end": "2024-01-10", "rows": 287, "sales_total": "25462.05"},
+        {"start": "2024-12-01", "end": "2024-12-15", "rows": 422, "sales_total": "40683.30"}
+      ],
+      "category_totals": [
+        {"category": "Accessories", "sales_total": "213111.04"},
+        {"category": "Apparel", "sales_total": "221047.64"},
+        {"category": "Equipment", "sales_total": "245050.15"},
+        {"category": "Outdoor", "sales_total": "251786.44"}
+      ],
+      "region_totals": [
+        {"region": "Central", "sales_total": "232046.37"},
+        {"region": "East", "sales_total": "237989.45"},
+        {"region": "South", "sales_total": "230195.63"},
+        {"region": "West", "sales_total": "230763.82"}
+      ],
+      "ui_reconciliation_note": "The coordinating assistant's refreshed unfiltered card showed 931.00K around 19:49Z. This rounded display is consistent with the exact source/model value 930995.27 but cannot establish 930996.86; that candidate was not supported by the exact source/model queries."
+    }
+  },
+  "source_validation": {
+    "verified_utc": "2026-11-14T17:37:22.034Z",
+    "tenant_id": "4526cee1-4399-4e4b-9134-46fabd583527",
+    "warehouse_id": "f37863b7242d0931",
+    "warehouse_name": "fabricinterop-powerbi-demo",
+    "warehouse_state_observed_before_first_source_query": "STOPPED",
+    "warehouse_auto_stop_minutes": 10,
+    "identity_verified": true,
+    "identity_evidence": "Databricks current_user() matched the expected MCAP admin identity; the principal value is omitted from this manifest.",
+    "row_counts": {"DimDate": 365, "DimProduct": 20, "DimCustomer": 100, "FactSales": 10000},
+    "sales_total": "930299.36",
+    "change_batch_key_range": {"first": 10001, "last": 10010, "occupied_rows": 0},
+    "statement_id": "01f1e052-0bb8-168e-8654-6d33e779a77a",
+    "note": "Historical read-only source snapshot; its zero collision result did not establish exclusive writer access. Immediate pre-append baseline, grant, active-query, and collision checks are recorded under append_validation."
+  },
+  "append_validation": {
+    "pre_append": {
+      "statement_id": "01f1e063-9ab1-1d7a-ade5-080b6d31a1e2",
+      "query_start_utc": "2026-11-14T19:43:02.697Z",
+      "identity_verified": true,
+      "fact_sales_rows": 10000,
+      "sales_total": "930299.36",
+      "write_grants": "SHOW GRANTS on the schema and FactSales table showed ALL PRIVILEGES only for the expected MCAP identity.",
+      "active_warehouse_queries": 0
+    },
+    "collision_check": {
+      "statement_id": "01f1e064-2bf4-14fc-8412-006cc9f38f34",
+      "query_start_utc": "2026-11-14T19:47:06.403Z",
+      "key_range": {"first": 10001, "last": 10010},
+      "occupied_keys": 0
+    },
+    "insert": {
+      "statement_id": "01f1e064-2cb2-1830-974b-ffbb4feeeb76",
+      "status": "SUCCEEDED",
+      "query_start_utc": "2026-11-14T19:47:07.649Z",
+      "query_end_utc": "2026-11-14T19:47:10.341Z",
+      "delta_version": 21,
+      "delta_timestamp_raw": "2026-11-14 19:47:09",
+      "delta_session_timezone": "Etc/UTC",
+      "commit_utc": "2026-11-14T19:47:09Z",
+      "visibility_deadline_seconds": 900,
+      "visibility_deadline_utc": "2026-11-14T20:02:09Z",
+      "rows_inserted": 10,
+      "sales_amount_inserted": "695.91"
+    },
+    "source_after": {
+      "statement_id": "01f1e064-5916-1163-bba4-be90f85b7729",
+      "query_start_utc": "2026-11-14T19:48:22.122Z",
+      "query_end_utc": "2026-11-14T19:48:22.761Z",
+      "fact_sales_rows": 10010,
+      "sales_total": "930995.27",
+      "batch_rows": 10,
+      "batch_total": "695.91",
+      "distinct_fact_keys": 10010,
+      "null_fact_keys": 0,
+      "duplicate_fact_keys": 0,
+      "dimension_rows": {"DimDate": 365, "DimProduct": 20, "DimCustomer": 100},
+      "dimension_duplicate_keys": {"DimDate": 0, "DimProduct": 0, "DimCustomer": 0},
+      "orphan_foreign_keys": {"DateKey": 0, "ProductKey": 0, "CustomerKey": 0}
+    }
+  },
+  "report_validation": {
+    "status": "verified_with_limitations",
+    "expected_name": "fabricinterop_powerbi_report",
+    "name": "fabricinterop_powerbi_report",
+    "id": "3dcfdaab-7eca-4415-8bf2-ba55cec3a091",
+    "workspace_id": "bdd6b268-1844-42a5-93ac-261b084fbaee",
+    "model_id": "39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1",
+    "binding_verified": true,
+    "binding_evidence": "FabricIQ GetReportMetadata confirmed the report ID, workspace, and binding to the existing semantic model.",
+    "metadata_visuals": ["card"],
+    "metadata_limitation": "The metadata response exposed the card but did not list the date, category, or region slicer visuals. The coordinating assistant observed and interacted with those slicers in the signed-in browser canvas.",
+    "ui_observation_attribution": "Coordinating assistant, signed-in Power BI browser canvas.",
+    "baseline_ui_observed_approximate_utc": "2026-11-14T19:12Z to 19:13Z, before the 19:47Z append.",
+    "baseline_ui_observations_before_append": [
+      {"selection": "Default filters", "card": "930.30K"},
+      {"selection": "Category = Accessories", "card": "212.94K"},
+      {"selection": "Category = Accessories; Region = East", "card": "53.39K"},
+      {"selection": "Date inclusive 2024-12-01 through 2024-12-15", "card": "40.68K"},
+      {"selection": "Reset", "card": "930.30K", "filter_state": "No filters applied"}
+    ],
+    "exact_model_baseline": {
+      "rows": 10000,
+      "sales_total": "930299.36",
+      "category_accessories": "212937.91",
+      "accessories_and_east": "53389.83",
+      "date_2024_12_01_through_2024_12_15": {"rows": 422, "sales_total": "40683.30"}
+    },
+    "post_append_ui_observation": {
+      "approximate_utc": "2026-11-14T19:49Z",
+      "default_filters_reset": true,
+      "card": "931.00K",
+      "exact_value_not_read_from_ui": true
+    },
+    "combined_slicer_ui_interaction": "Not captured; individual date, category, and region interactions were observed. Model-level aggregate queries independently verified the date, category, and region behavior."
+  },
+  "deployment_blockers": [
+    {
+      "step": "Databricks Publish to Power BI authentication",
+      "status": "resolved_by_model_verification",
+      "error": "popup_window_error: BrowserAuthError: empty_window_error: window.open returned null or undefined window object.",
+      "attempt": "Retried Connect to Microsoft Entra ID with the Browser canvas visible click action.",
+      "outcome": "The Microsoft Entra ID popup did not open in the embedded Browser canvas. The user subsequently reported completing the publish flow in a regular browser; the resulting model was independently identified and its tables, relationships, and baseline queried through supported APIs."
+    },
+    {
+      "step": "Semantic model discovery and pre-edit relationship capture",
+      "status": "verified",
+      "attempt": "Used the verified MCAP Azure CLI identity for Power BI REST dataset/report reads and Power BI modeling APIs by the returned model ID; global MCP configuration was not changed.",
+      "outcome": "Captured the actual model ID/name, four DirectQuery Ready partitions, three active many-to-one one-direction relationships, and baseline DAX results before manual edits."
+    },
+    {
+      "step": "Power BI report creation and baseline walkthrough",
+      "status": "verified_with_limitations",
+      "attempt": "The coordinating assistant used the signed-in Power BI browser canvas to save the report and inspect its card and slicers. FabricIQ GetReportMetadata independently verified the report-to-model binding.",
+      "outcome": "Report fabricinterop_powerbi_report (ID 3dcfdaab-7eca-4415-8bf2-ba55cec3a091) is bound to the existing model. Rounded default, category, category-plus-region, and date-range card observations are recorded separately from exact model values. The metadata response listed only the card; a combined slicer interaction was not captured. No model relationships were edited."
+    },
+    {
+      "step": "Source-change batch and visibility check",
+      "status": "completed_within_deadline",
+      "attempt": "Rechecked MCAP identity, source baseline, schema/table write grants, active warehouse queries, and the standalone batch-key collision query immediately before the prepared INSERT.",
+      "outcome": "The prepared 10-row INSERT succeeded once. Delta version 21 committed at 2026-11-14T19:47:09Z; post-change source integrity passed. A fresh exact model query completed within the 900-second deadline and matched the source at 10,010 rows and 930995.27. The report's refreshed card showed 931.00K, a rounded UI observation. No further batch or cloud write was performed."
+    }
+  ],
+  "note": "Verified demo-owned resources include the dedicated Fabric workspace, Databricks schema, four Delta tables, published semantic model, and saved report. The Fabric capacity, parent catalog, Databricks workspace, and SQL warehouse are shared prerequisites and not owned. The approved 10-row FactSales append was performed exactly once; no relationship, shared permission, or setting was changed. The warehouse was initially STOPPED and has a 10-minute auto-stop."
+}

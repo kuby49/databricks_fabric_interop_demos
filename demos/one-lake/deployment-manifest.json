@@ -1,0 +1,406 @@
+{
+  "demo": "one-lake",
+  "prefix": "fabricinterop",
+  "status": "completed_with_baseline_deadline_failure",
+  "live_execution": "completed",
+  "resource_creation_performed": true,
+  "verification": {
+    "status": "partial",
+    "observed_at": "2026-11-14T17:22:33Z",
+    "latency_seconds": null,
+    "notes": "Four managed Delta tables were created and validated in Databricks. The baseline mirror visibility check failed the 900-second policy because no mirror or SQL endpoint was available by the deadline; propagation latency was not measured. A later exact baseline comparison matched, and the separately timed append verification passed."
+  },
+  "access_changes": [
+    {
+      "type": "Fabric workspace role",
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "principal_id": "afcfa273-c0c4-4a70-9e09-232a5502cec4",
+      "role": "Viewer",
+      "assigned_at_utc": "2026-11-14T15:57:52Z"
+    },
+    {
+      "type": "OneLake data access role",
+      "name": "DatabricksManagedIdentity",
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "item_id": "4d673648-4185-498a-a23d-f4f68a75a3ee",
+      "principal_id": "afcfa273-c0c4-4a70-9e09-232a5502cec4",
+      "role_id": "3dc99312-77ab-4df9-9c84-f69ceba9c739",
+      "permission": "ReadWrite",
+      "assigned_at_utc": "2026-11-14T16:05:50Z",
+      "verification": "Fabric dataAccessRoles read-back returned one item-wide ReadWrite role with this identity as its sole member."
+    }
+  ],
+  "workspace_settings": {
+    "onelake_sas_authentication": {
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "status": "enabled",
+      "scope": "all workspace users",
+      "evidence": "Fabric workspace delegated settings displayed On and Enabled for all users after reopening on 2026-11-14 UTC; tenant-wide authentication default was not changed."
+    }
+  },
+  "prerequisite_evidence": {
+    "tenant_id": "4526cee1-4399-4e4b-9134-46fabd583527",
+    "capacity": "fabricadbmirror (Active)",
+    "catalog": "dbxfabricinterop",
+    "existing_storage_credential": "onelake_storage_cred (read_only=true)",
+    "demo_storage_credential": "fabricinterop_onelake_cred (read_only=false; isolated and workspace-bound)",
+    "mirror_identity_privileges": "The MCAP administrator has explicit catalog-level EXTERNAL_USE_SCHEMA and is the user-confirmed connection identity; Fabric connection metadata does not expose the OAuth principal.",
+    "access_connector": "dbx-access-connector-onelake",
+    "tenant_sas_key_generation": "enabled",
+    "tenant_sas_authentication_default": "disabled; delegated to workspace",
+    "databricks_storage_item_creation": "enabled"
+  },
+  "connection_candidate": {
+    "id": "18f5c646-f700-4f5b-bc1e-ba0e4be2224f",
+    "display_name": "fabricinterop_onelake_connection admin",
+    "workspace_url": "https://adb-5878076557050.10.azuredatabricks.net/",
+    "credential_type": "OAuth2",
+    "single_sign_on": "None",
+    "test_connection_skipped": false,
+    "created_at_utc": "2026-11-14T18:06:33Z",
+    "observed_at_utc": "2026-11-14T18:07:51Z",
+    "status": "identity_user_confirmed_connection_online",
+    "oauth_principal": "admin@MngEnvMCAP885977.onmicrosoft.com",
+    "test_connection": {
+      "operation_id": "04e25d5f-6235-4a12-91af-6769f073a039",
+      "status": "Online",
+      "errors": [],
+      "observed_at_utc": "2026-11-14T18:15:53Z"
+    },
+    "notes": "The user confirmed ownership and the organizational account used to sign in. Fabric returned the current caller as Owner; the OAuth principal is user-confirmed, not exposed by connection metadata."
+  },
+  "created_resources": [
+    {
+      "kind": "fabric_workspace",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake",
+      "id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "capacity_id": "de12195c-40d2-4bee-af60-f0d6dedfbb0f",
+      "created_at_utc": "2026-11-14T15:55:25Z"
+    },
+    {
+      "kind": "fabric_storage_item",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake_storage",
+      "id": "4d673648-4185-498a-a23d-f4f68a75a3ee",
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "created_at_utc": "2026-11-14T15:56:03Z"
+    },
+    {
+      "kind": "fabric_connection",
+      "created_by_demo": true,
+      "created_by_user": true,
+      "name": "fabricinterop_onelake_connection",
+      "display_name": "fabricinterop_onelake_connection admin",
+      "id": "18f5c646-f700-4f5b-bc1e-ba0e4be2224f",
+      "created_at_utc": "2026-11-14T18:06:33Z",
+      "verification": "The user confirmed this is their connection and that the organizational account is admin@MngEnvMCAP885977.onmicrosoft.com. Fabric testConnection returned Online with no errors."
+    },
+    {
+      "kind": "fabric_mirror",
+      "created_by_demo": true,
+      "created_by_user": true,
+      "name": "fabricinterop_catalog_mirror",
+      "id": "eeb9c3bc-94a6-480e-8dfb-b1fe32096f85",
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "observed_at_utc": "2026-11-14T18:24:02Z",
+      "verification": "Fabric definition read-back at 2026-11-14T18:28:38Z confirms Partial catalog and Partial schema, explicitly including only dimcustomer, dimdate, dimproduct and factsales, with autoSync Enabled and the approved connection. The user-created Full-schema selection was narrowed using operation 75612f31-bb22-417c-8e02-110880880ce5."
+    },
+    {
+      "kind": "fabric_sql_endpoint",
+      "created_by_demo": true,
+      "name": "fabricinterop_catalog_mirror",
+      "id": "1ad5b6ba-b0bc-4ba8-9e35-c32442baf898",
+      "workspace_id": "6292f032-8a22-4c18-85eb-8a7332e73501",
+      "observed_at_utc": "2026-11-14T18:24:02Z",
+      "verification": "Fabric SQL queries returned all four demo tables and matching exact baseline and post-append aggregates."
+    },
+    {
+      "kind": "uc_storage_credential",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake_cred",
+      "id": "3b2ff9d0-6416-45fd-b461-4e9b5674b688",
+      "metastore_id": "c5762cd2-9a39-4ab7-ac09-bd95909039a1",
+      "read_only": false,
+      "created_at_utc": "2026-11-14T16:25:52Z",
+      "access_restriction": "ISOLATION_MODE_ISOLATED; bound only to Databricks workspace 5878076557050; permissions API returned no explicit grants"
+    },
+    {
+      "kind": "uc_external_location",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake",
+      "metastore_id": "c5762cd2-9a39-4ab7-ac09-bd95909039a1",
+      "credential_name": "fabricinterop_onelake_cred",
+      "url": "abfss://6292f032-8a22-4c18-85eb-8a7332e73501@onelake.dfs.fabric.microsoft.com/4d673648-4185-498a-a23d-f4f68a75a3ee/Files/",
+      "created_at_utc": "2026-11-14T16:28:46Z",
+      "effective_enable_file_events": false
+    },
+    {
+      "kind": "databricks_schema",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake",
+      "catalog": "dbxfabricinterop",
+      "id": "f4ac43c5-9876-48f6-806e-45460d59cf55",
+      "created_at_utc": "2026-11-14T16:31:17Z",
+      "storage_root": "abfss://6292f032-8a22-4c18-85eb-8a7332e73501@onelake.dfs.fabric.microsoft.com/4d673648-4185-498a-a23d-f4f68a75a3ee/Files/"
+    },
+    {
+      "kind": "databricks_workspace_directory",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake_demo",
+      "path": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo",
+      "object_id": 759998602688144,
+      "created_at_utc": "2026-11-14T16:36:06Z"
+    },
+    {
+      "kind": "databricks_notebook",
+      "created_by_demo": true,
+      "name": "fabricinterop_serverless_probe",
+      "path": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo/fabricinterop_serverless_probe",
+      "object_id": 759998602688145,
+      "created_at_utc": "2026-11-14T16:37:41Z"
+    },
+    {
+      "kind": "databricks_workspace_directory_tree",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake_demo_layout",
+      "root": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo",
+      "directories": [
+        {"path": "demos", "object_id": 4404057340135225},
+        {"path": "demos/common", "object_id": 4404057340135226},
+        {"path": "demos/one-lake", "object_id": 4404057340135227},
+        {"path": "demos/one-lake/scripts", "object_id": 4404057340135228},
+        {"path": "demos/one-lake/notebooks", "object_id": 4404057340135229}
+      ],
+      "observed_at_utc": "2026-11-14T16:46:17Z"
+    },
+    {
+      "kind": "databricks_workspace_files",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake_demo_helpers",
+      "root": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo",
+      "files": [
+        {"path": "demos/common/star_schema.py", "object_id": 4404057340135230},
+        {"path": "demos/common/__init__.py", "object_id": 4404057340135231},
+        {"path": "demos/one-lake/scripts/notebook_paths.py", "object_id": 4404057340135232},
+        {"path": "demos/one-lake/scripts/demo_config.py", "object_id": 4404057340135233}
+      ],
+      "observed_at_utc": "2026-11-14T16:47:29Z"
+    },
+    {
+      "kind": "databricks_workspace_file",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake_demo_config",
+      "path": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo/demos/one-lake/config.json",
+      "object_id": 4404057340135234,
+      "observed_at_utc": "2026-11-14T16:48:22Z",
+      "contains_secrets": false
+    },
+    {
+      "kind": "databricks_notebooks",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake_demo_notebooks",
+      "root": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo/demos/one-lake/notebooks",
+      "notebooks": [
+        {"name": "01_create_initial_tables", "object_id": 4404057340135235},
+        {"name": "02_append_batch", "object_id": 4404057340135236}
+      ],
+      "observed_at_utc": "2026-11-14T16:49:09Z"
+    },
+    {
+      "kind": "databricks_notebook",
+      "created_by_demo": true,
+      "name": "fabricinterop_layout_probe",
+      "path": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo/demos/one-lake/notebooks/fabricinterop_layout_probe",
+      "object_id": 3728252780632863,
+      "observed_at_utc": "2026-11-14T16:55:13Z"
+    },
+    {
+      "kind": "databricks_notebook",
+      "created_by_demo": true,
+      "name": "fabricinterop_initial_tables_retry",
+      "path": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo/demos/one-lake/notebooks/fabricinterop_initial_tables_retry",
+      "object_id": 3728252780632864,
+      "observed_at_utc": "2026-11-14T17:04:57Z"
+    },
+    {
+      "kind": "databricks_notebook",
+      "created_by_demo": true,
+      "name": "fabricinterop_validate_baseline",
+      "path": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo/demos/one-lake/notebooks/fabricinterop_validate_baseline",
+      "object_id": 3728252780632865,
+      "observed_at_utc": "2026-11-14T17:09:15Z"
+    },
+    {
+      "kind": "databricks_notebook",
+      "created_by_demo": true,
+      "name": "fabricinterop_write_timestamps",
+      "path": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo/demos/one-lake/notebooks/fabricinterop_write_timestamps",
+      "object_id": 3728252780632866,
+      "observed_at_utc": "2026-11-14T17:16:10Z"
+    },
+    {
+      "kind": "databricks_notebook",
+      "created_by_demo": true,
+      "name": "fabricinterop_utc_commit_probe",
+      "path": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo/demos/one-lake/notebooks/fabricinterop_utc_commit_probe",
+      "object_id": 3728252780632867,
+      "observed_at_utc": "2026-11-14T17:18:56Z"
+    },
+    {
+      "kind": "databricks_notebook",
+      "created_by_demo": true,
+      "name": "fabricinterop_append_timed",
+      "path": "/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo/demos/one-lake/notebooks/fabricinterop_append_timed",
+      "object_id": 2730336194485447,
+      "observed_at_utc": "2026-11-14T18:34:29Z",
+      "purpose": "Runs the guarded append and returns the latest Delta commit timestamp in UTC for the separate timed check."
+    },
+    {
+      "kind": "databricks_managed_tables",
+      "created_by_demo": true,
+      "name": "fabricinterop_onelake_baseline_tables",
+      "schema": "dbxfabricinterop.fabricinterop_onelake",
+      "format": "DELTA",
+      "storage_root": "abfss://6292f032-8a22-4c18-85eb-8a7332e73501@onelake.dfs.fabric.microsoft.com/4d673648-4185-498a-a23d-f4f68a75a3ee/Files/",
+      "tables": [
+        {"name": "dimdate", "id": "2a64c85d-51a6-4fb5-82a3-74935562f912"},
+        {"name": "dimproduct", "id": "89dc1b8b-4b98-4396-8d7f-25153235d859"},
+        {"name": "dimcustomer", "id": "2a0c8151-9752-400c-b610-491df084af2b"},
+        {"name": "factsales", "id": "f65edfda-e84b-4feb-9219-0e9e0df15a72"}
+      ],
+      "observed_at_utc": "2026-11-14T17:07:49Z"
+    }
+  ],
+  "serverless_probe": {
+    "run_id": 34933000304493,
+    "submitted_at_utc": "2026-11-14T16:38:48Z",
+    "performance_target": "PERFORMANCE_OPTIMIZED",
+    "task_run_id": 528849759389013,
+    "status": "success",
+    "effective_performance_target": "PERFORMANCE_OPTIMIZED",
+    "spark_query_result": 1,
+    "working_directory": "/Workspace/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo",
+    "observed_at_utc": "2026-11-14T16:40:49Z"
+  },
+  "layout_probe": {
+    "run_id": 650837314709173,
+    "submitted_at_utc": "2026-11-14T16:55:53Z",
+    "performance_target": "PERFORMANCE_OPTIMIZED",
+    "task_run_id": 601392755028161,
+    "status": "success",
+    "working_directory": "/Workspace/Users/admin@mngenvmcap885977.onmicrosoft.com/fabricinterop_onelake_demo/demos/one-lake/notebooks",
+    "generated_counts": {"DimDate": 365, "DimProduct": 20, "DimCustomer": 100, "FactSales": 10000},
+    "existing_tables": [],
+    "observed_at_utc": "2026-11-14T16:56:27Z"
+  },
+  "initial_table_run": {
+    "run_id": 383040161631402,
+    "submitted_at_utc": "2026-11-14T16:59:12Z",
+    "performance_target": "PERFORMANCE_OPTIMIZED",
+    "task_run_ids": [62644259542289, 449215199156883],
+    "status": "failed",
+    "error": "Serverless Spark Connect rejected DataFrameWriter mode errorifexists as UNSUPPORTED_OPERATION before the first table write.",
+    "post_failure_tables": [],
+    "observed_at_utc": "2026-11-14T17:03:44Z"
+  },
+  "initial_table_retry": {
+    "run_id": 319552970667896,
+    "submitted_at_utc": "2026-11-14T17:05:42Z",
+    "performance_target": "PERFORMANCE_OPTIMIZED",
+    "task_run_id": 386182084148942,
+    "status": "success",
+    "completed_at_utc": "2026-11-14T17:06:46.324Z",
+    "constraints": "Notebook completed after verifying all four primary and three foreign key constraint names in SHOW CREATE TABLE."
+  },
+  "baseline_validation": {
+    "run_id": 982783088598732,
+    "submitted_at_utc": "2026-11-14T17:09:56Z",
+    "performance_target": "PERFORMANCE_OPTIMIZED",
+    "task_run_id": 127433465363420,
+    "status": "success",
+    "observed_at_utc": "2026-11-14T17:10:45Z",
+    "row_counts": {"DimDate": 365, "DimProduct": 20, "DimCustomer": 100, "FactSales": 10000},
+    "sales_total": "930299.36",
+    "sales_by_category": {"Accessories": "212937.91", "Apparel": "220849.20", "Equipment": "244902.81", "Outdoor": "251609.44"},
+    "sales_by_region": {"Central": "231873.24", "East": "237791.01", "South": "230048.29", "West": "230586.82"},
+    "sales_by_month": {"2024-01": "75290.01", "2024-02": "75392.47", "2024-03": "78756.23", "2024-04": "71032.45", "2024-05": "80568.31", "2024-06": "81644.01", "2024-07": "74997.31", "2024-08": "78861.03", "2024-09": "75774.11", "2024-10": "79441.24", "2024-11": "79711.77", "2024-12": "78830.42"},
+    "date_aggregate_count": 365,
+    "evidence": "Read all four Databricks tables; all rows and exact date, category, region, month, and total aggregates matched independently generated reference data, including key and referential-integrity checks."
+  },
+  "baseline_rerun_guard": {
+    "run_id": 280984797437411,
+    "submitted_at_utc": "2026-11-14T17:12:12Z",
+    "performance_target": "PERFORMANCE_OPTIMIZED",
+    "task_run_ids": [506380250198793, 271010509197749, 713974568973828],
+    "status": "expected_failure",
+    "error": "TABLE_OR_VIEW_ALREADY_EXISTS on DimDate; the notebook refused the existing table.",
+    "observed_at_utc": "2026-11-14T17:14:06Z",
+    "post_rerun_validation_run_id": 563832063035877,
+    "post_rerun_validation_task_run_id": 664695771150851,
+    "post_rerun_validation_status": "success",
+    "post_rerun_observed_at_utc": "2026-11-14T17:15:17Z",
+    "post_rerun_evidence": "All rows, counts, total and aggregates still match the original deterministic baseline."
+  },
+  "baseline_commit_probe": {
+    "run_id": 352398245785728,
+    "submitted_at_utc": "2026-11-14T17:16:47Z",
+    "performance_target": "PERFORMANCE_OPTIMIZED",
+    "task_run_id": 649865728836971,
+    "status": "success",
+    "observed_at_utc": "2026-11-14T17:17:45Z",
+    "evidence": "Version-zero Delta history reports initial CREATE TABLE AS SELECT for all four tables; fact table timestamp was 2026-11-14T17:06:25.600, but the probe did not explicitly verify the Spark session time zone."
+  },
+  "baseline_utc_commit_probe": {
+    "run_id": 122784962453503,
+    "submitted_at_utc": "2026-11-14T17:19:36Z",
+    "performance_target": "PERFORMANCE_OPTIMIZED",
+    "task_run_id": 18382722296608,
+    "status": "success",
+    "session_timezone": "UTC",
+    "last_initial_data_commit_at_utc": "2026-11-14T17:06:25.600Z",
+    "observed_at_utc": "2026-11-14T17:22:33Z"
+  },
+  "mirror_baseline_verification": {
+    "status": "fail",
+    "timeout_seconds": 900,
+    "visibility_event_at_utc": "2026-11-14T17:06:25.600Z",
+    "deadline_at_utc": "2026-11-14T17:21:25.600Z",
+    "observed_at_utc": "2026-11-14T17:22:33Z",
+    "latency_seconds": null,
+    "evidence": "Fabric workspace inventory contained only the Storage item after the deadline; no mirror or SQL endpoint existed and no mirror query could be run. This is a deadline-policy failure, not a measured propagation latency."
+  },
+  "mirror_baseline_late_observation": {
+    "observed_at_utc": "2026-11-14T18:32:14.320539Z",
+    "row_counts": {"DimDate": 365, "DimProduct": 20, "DimCustomer": 100, "FactSales": 10000},
+    "sales_total": "930299.36",
+    "mismatch_count": 0,
+    "deadline_outcome": "FAIL",
+    "evidence": "Fabric SQL endpoint exact expected-versus-actual date, category, region and total checks returned zero mismatches; counts were independently queried. This late match does not change the original deadline failure."
+  },
+  "append_run": {
+    "run_id": 963843642355579,
+    "submitted_at_utc": "2026-11-14T18:35:11Z",
+    "performance_target": "PERFORMANCE_OPTIMIZED",
+    "task_run_id": 454937768202578,
+    "status": "success",
+    "observed_at_utc": "2026-11-14T18:36:06Z",
+    "delta_version": 2,
+    "delta_operation": "WRITE",
+    "committed_at_utc": "2026-11-14T18:35:50.718Z",
+    "evidence": "Guarded deterministic append completed and the notebook returned the latest Delta commit timestamp in UTC."
+  },
+  "mirror_append_verification": {
+    "status": "pass",
+    "timeout_seconds": 900,
+    "visibility_event_at_utc": "2026-11-14T18:35:50.718Z",
+    "deadline_at_utc": "2026-11-14T18:50:50.718Z",
+    "observed_at_utc": "2026-11-14T18:37:03.835810Z",
+    "observed_elapsed_seconds": 73.11781,
+    "row_count": 11000,
+    "sales_total": "1020017.60",
+    "mismatch_count": 0,
+    "evidence": "Exact expected-versus-actual date, category, region and total checks returned zero mismatches by the deadline. Elapsed time is to the matching observation, not the first visibility time."
+  },
+  "pending_prerequisites": []
+}
