@@ -6,6 +6,34 @@ The coordinating assistant's signed-in browser canvas observed the pre-append de
 
 The purpose is to test whether the **Databricks Catalog Explorer Publish to Power BI** feature preserves the three declared Unity Catalog relationships. This deployment's pre-edit inspection observed the three active many-to-one, one-direction fact-to-dimension relationships. Do not substitute Power BI's manual Databricks connector, a mirror, or an undocumented publishing API.
 
+Deployed names and flows are shown below; the editable source is
+[`architecture.mmd`](architecture.mmd).
+
+```mermaid
+flowchart LR
+  GEN["Shared baseline generator"]
+  NOTE["Source load + append"]
+  SCHEMA["dbxfabricinterop<br/>fabricinterop_powerbi schema"]
+  DIM["Three dimensions"]
+  FACT["FactSales"]
+  WH["Existing SQL warehouse"]
+  PUB["Catalog Explorer<br/>Publish to Power BI"]
+  MODEL["dbxfabricinterop-fabricinterop_powerbi<br/>DirectQuery model"]
+  REPORT["fabricinterop_powerbi_report"]
+  READER["Presenter"]
+  WS["fabricinterop_powerbi workspace"]
+  CAP["fabricadbmirror capacity"]
+  GEN --> NOTE --> SCHEMA
+  SCHEMA --> DIM
+  SCHEMA --> FACT
+  DIM -. "informational relationships" .-> FACT
+  SCHEMA --> PUB --> MODEL --> REPORT --> READER
+  MODEL -->|"DirectQuery"| WH --> SCHEMA
+  WS --- MODEL
+  WS --- REPORT
+  CAP --- WS
+```
+
 ## Prerequisites and isolation
 
 Verify separately before any live activity:
@@ -62,7 +90,7 @@ The report for this deployment is already saved; do not create a duplicate. For 
 
 ## Cleanup — explicit confirmation required
 
-Cleanup is manual and **never automatic**. Review `manifest.json` first: only exact, verified, demo-owned resource IDs/names in `owned_resources` are eligible. The current manifest records the dedicated workspace only; the capacity is shared. Require the operator's explicit confirmation of the enumerated resources and irreversible data loss immediately before deletion. If identity/ownership is ambiguous, stop. Do not select by prefix, infer ownership by name, or delete the shared capacity, parent catalog, Databricks workspace, another demo's resources or unrelated contents.
+Cleanup is manual and **never automatic**. Review `manifest.json` first: only exact, verified, demo-owned resource IDs/names in `owned_resources` are eligible. The manifest also records the schema, tables, semantic model, and report; the capacity is shared. Require the operator's explicit confirmation of the enumerated resources and irreversible data loss immediately before deletion. If identity/ownership is ambiguous, stop. Do not select by prefix, infer ownership by name, or delete the shared capacity, parent catalog, Databricks workspace, another demo's resources or unrelated contents.
 
 For each exact recorded report and model ID, verify the workspace and remove the item in the UI; then verify the dedicated workspace contains no unowned items before deleting that exact workspace. On Databricks, verify the recorded full table names belong exclusively to this deployment; delete only those exact tables, fact first and then dimensions, using appropriately quoted identifiers. Delete the recorded schema **only after verifying it is empty**; do not use CASCADE. Update manifest status and record verified deletion outcomes without secrets. Do not run these operations unless separately authorized.
 

@@ -1,13 +1,14 @@
 # Databricks + Fabric interoperability demos
 
-**Status:** Final implementation specification. Local code, documentation, and checks are prepared. Cloud deployment and live acceptance checks are a separate gated phase; this document does not authorize creating or changing cloud resources.
+**Status:** Canonical implementation specification. All three demos have deployed results and documented limitations; demo 3's selected normal MV was not exposed by its mirror. See each manifest and runbook. Resource changes require the applicable deployment approval.
 
 ## Objective
 
-Deliver two reproducible demonstrations with distinct integration patterns:
+Deliver three demonstrations with distinct integration patterns:
 
 1. **OneLake external location:** Azure Databricks Unity Catalog managed Delta tables use OneLake storage through a Fabric **Azure Databricks Storage** item. Fabric reads those same underlying tables through a **mirrored Azure Databricks catalog** and its read-only SQL analytics endpoint.
 2. **Publish to Power BI:** Databricks' native **Publish to Power BI** feature publishes a UC star schema to a home-tenant Power BI workspace. The demo observes whether declared UC relationships are preserved before any manual model edits.
+3. **Compatibility Mode:** compare OneLake catalog-commit managed sources exposed by a normal mirrored catalog with separately generated read-only compatibility outputs exposed through Lakehouse shortcuts in Fabric SQL and Spark. OneLake output was attempted first; the user approved ADLS output as a fallback and direct output shortcuts in place of the second mirror.
 
 The first path demonstrates shared underlying storage with a catalog mirror; the second publishes a Power BI semantic model. Neither may be represented as the other.
 
@@ -31,7 +32,7 @@ Configuration templates contain secret references only, never tokens or secret v
 
 ## Shared sample model
 
-Both demos use the same deterministic, dependency-free generator and create independent physical tables and rows:
+All demos use the same deterministic, dependency-free generator and independent physical tables and rows. Demo 3 starts from the original baseline rather than the appended live contents of demos 1 and 2:
 
 | Table | Grain | Primary key | Foreign keys |
 |---|---|---|---|
@@ -90,9 +91,54 @@ If automatic relationship propagation does not meet the objective, report it as 
 
 Verify UC-enabled compute, a Databricks SQL warehouse, a Power BI Premium/PPU/Fabric capacity with XMLA Read Write, home-tenant workspace access, Entra consent for the Databricks Dataset Publishing Integration, authentication/credentials, licenses, and the selected semantic-model storage mode. The user has approved managed-storage use only for the separate `fabricinterop_powerbi` schema; verify required existing UC privileges without changing grants or storage configuration. All other permission, infrastructure, and deployment gates remain in force. If an essential capability is unavailable, report the exact blocker and proceed with the other independent demo where feasible; do not silently substitute a manual connector or different integration.
 
+## Demo 3: Compatibility Mode
+
+The approved design reuses the Databricks workspace, catalog, writable isolated
+credential, identity, Fabric connection and capacity, with a separate Fabric
+workspace, two Storage items and two UC schemas. Both producer sets retain
+`catalogManaged`; only the compatible set generates separate, read-only
+down-level outputs. Source and output locations and actual reader/writer
+protocols and feature lists must be recorded separately.
+
+Each producer set contains the four baseline tables and a native sales
+materialized view at Day × Product × Region × Segment grain, without
+customer-level grouping. Include date and product descriptors, exact sales
+total, total quantity and line count. Verify source keys, row counts, totals,
+full aggregate group equality, MV type and refresh status.
+
+The normal mirror explicitly selects the four tables and MV. The validation
+Lakehouse uses mirror-based shortcuts for normal tables and direct ADLS
+shortcuts to the five actual generated compatibility outputs, as authorized
+by the user. Test discovery and queries separately in Fabric SQL and Spark;
+permission or readiness failures are not successful negative controls. Check
+resolved paths, output provenance, freshness and protocol independently, with
+bounded 900-second checks.
+
+**Deployment evidence:** the OneLake compatibility destination attempt
+required `CREATE EXTERNAL TABLE`, while the location-scoped grant was rejected
+as inapplicable to `EXTERNAL_LOCATION_ONELAKE_MANAGED`. The approved fallback
+uses `dbxfabricinterop` ADLS only for compatibility outputs. Both native MVs
+refreshed and matched in Databricks. Fabric SQL queried the four normal tables
+and five compatibility outputs; Spark read all five compatibility outputs
+matching the independent reference, but the four normal mirror-based reads
+reported commit-coordinator errors. The selected normal MV was not exposed by
+its mirror, so its Fabric reads remain unavailable.
+
+The four normal source table logs show reader 3/writer 7 with `catalogManaged`;
+the five output logs show reader 1/writer 7 without that feature and map to
+their producer IDs. The actual MV backing-source protocol was not verified.
+The documented `DESCRIBE DETAIL` check by UC name returned SQLSTATE `42809`
+for both native MVs, saying it expects a table but the object is a view, so
+no `tableFeatures` result was available.
+These are observed protocol values, not runtime versions. See the
+[runbook](compatibility-mode/README.md) and
+[manifest](compatibility-mode/deployment-manifest.json) for exact evidence,
+including the isolated registration failure and documentation conflict.
+Do not substitute external metadata, plain copies or removal of catalog commits.
+
 ## Local implementation, evidence, and completion
 
-Each demo directory contains its own README, implementation assets, manual instructions, sanitized ownership/evidence manifest, editable Mermaid architecture diagram, local checks, and confirmation-gated cleanup instructions. The root README links both demos and explains their differences.
+Each demo directory contains its own README, implementation assets, manual instructions, sanitized ownership/evidence manifest, editable and embedded Mermaid architecture diagram, local checks, and confirmation-gated cleanup instructions. Demo 3's local SQL templates are non-executable references, not an automated or verified rerun-safe deployer. The root README links all three demos and explains their differences.
 
 Evidence must distinguish **pass**, **fail**, and **blocked**; include timestamps, actual values, configured timeout, and sanitized errors. Do not fabricate resource IDs, test results, relationship behavior, propagation delays, or manual actions. Check a second run for duplicates and unintended data loss before claiming rerun safety.
 

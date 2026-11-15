@@ -1,21 +1,22 @@
 flowchart LR
-    subgraph DBX["Azure Databricks — dedicated demo schema"]
-        GEN["Shared star-schema generator"]
-        NOTE["Databricks notebook<br/>create / append managed Delta tables"]
-        UC["Unity Catalog<br/>explicitly approved parent catalog"]
-        EXT["UC external location<br/>Public Preview"]
-        NOTE --> UC
-        UC --> EXT
-    end
-
-    subgraph FAB["Fabric — dedicated workspace"]
-        ST["Databricks Storage item<br/>OneLake Files"]
-        MIRROR["Azure Databricks catalog mirror"]
-        SQL["Mirrored SQL analytics endpoint<br/>read-only"]
-        ST --> MIRROR --> SQL
-    end
-
-    GEN --> NOTE
-    EXT -->|"abfss://<WorkspaceID>@onelake.dfs.fabric.microsoft.com/<DatabricksStorageID>/Files/"| ST
-    ID["Chosen Databricks managed identity / service principal<br/>OneLake ReadWrite on this Storage item only"] -. "authorized identity" .-> ST
-    FABUSER["Fabric reader<br/>workspace Viewer"] --> SQL
+  GEN["Shared baseline generator"]
+  NOTE["Databricks create + append"]
+  SCHEMA["dbxfabricinterop<br/>fabricinterop_onelake schema"]
+  CRED["fabricinterop_onelake_cred"]
+  LOC["UC OneLake external location"]
+  ITEM["fabricinterop_onelake_storage"]
+  CONN["fabricinterop_onelake_connection"]
+  MIRROR["fabricinterop_catalog_mirror"]
+  SQL["Fabric SQL endpoint"]
+  READER["Fabric reader"]
+  WS["fabricinterop_onelake workspace"]
+  CAP["fabricadbmirror capacity"]
+  GEN --> NOTE --> SCHEMA --> LOC --> ITEM
+  CRED --> LOC
+  SCHEMA -. "UC metadata" .-> MIRROR
+  CONN -. "catalog access" .-> MIRROR
+  ITEM -. "underlying data" .-> MIRROR
+  MIRROR --> SQL --> READER
+  WS --- ITEM
+  WS --- MIRROR
+  CAP --- WS
