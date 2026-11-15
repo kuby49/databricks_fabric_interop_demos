@@ -13,7 +13,7 @@ from demos.common.star_schema import (
 )
 from .config import DEMOS
 from .safety import DeploymentError, Waiting, digest, guid, url
-from .services import ADLS, Azure, Databricks, Fabric, HTTP, azure_cli
+from .services import ADLS, Azure, Databricks, Fabric, HTTP, azure_cli, notebook_content
 from .sql import (
     MV, TABLES, aggregate_select, compatibility_properties, create_mv, create_table,
     ident, inserts, literal, qualified,
@@ -125,7 +125,9 @@ class Workflow:
                     else:
                         self.console.output(f"{kind}: recorded operation; resume only, not a new creation.")
             self.console.output("Required writes: workspace/items, isolated UC schema/tables/keys and deterministic initial data.")
-            if demo != "power-bi":
+            if demo == "federation":
+                self.console.output("Required writes: dedicated Lakehouse and bound producer notebooks; Fabric baseline loading; workspace-specific OneLake connection and independent read-only FOREIGN CATALOG. No UC managed tables, mirror or external location.")
+            elif demo != "power-bi":
                 self.console.output("OneLake external-location/identity and mirror-connection manual checkpoints will follow item creation.")
             if demo == "compatibility":
                 self.console.output("Two catalog-commit producer sets, two native MVs, SYNC UNIFORM output refreshes, five real ADLS output shortcuts and a bound notebook.")
@@ -176,13 +178,22 @@ class Workflow:
             "In Azure/Fabric capacity administration, verify this immutable Fabric capacity GUID belongs to the exact ARM resource and tenant.",
             "Verify matching regions, F SKU availability/quotas, license, capacity-assignment permission and tenant policies. What-If is not a quota or license guarantee.",
         ], "https://learn.microsoft.com/en-us/fabric/admin/capacity-settings")
-        self.gate(demo + "/uc", {"workspace_id": resolved["databricks"]["workspace_id"], "catalog": spec["catalog"]}, [
+        uc_instructions = [
             "For a new workspace, have an account/metastore administrator attach a Unity Catalog metastore and create or explicitly approve the named parent catalog with suitable managed storage.",
             f"Configure Databricks unified-auth profile {spec['profile']} for {resolved['databricks']['host']}. Verify UC, serverless SQL availability and USE CATALOG/CREATE SCHEMA; do not change other workloads.",
             "For OneLake, enable its workspace preview and use serverless or DBR 18.1+. For native MVs verify the required serverless entitlement. Obtain approval separately for any shared policy or permission change.",
-        ], UC_DOC)
+        ]
+        if demo == "federation":
+            uc_instructions = [
+                "Verify this workspace is attached to the intended metastore; CREATE CONNECTION/CREATE STORAGE CREDENTIAL and CREATE CATALOG must be approved at metastore scope.",
+                "The named foreign catalog is a new top-level object, not a schema inside any existing catalog. Verify CREATE FOREIGN CATALOG on the chosen connection.",
+                "Verify network access to OneLake and SQL warehouse version 2025.40+. Spark E2E requires DBR 18.0+ standard access mode and separate compute-cost confirmation.",
+                f"Configure profile {spec['profile']} for the exact Databricks host. Do not modify shared metastore/tenant settings.",
+            ]
+        self.gate(demo + "/uc", {"workspace_id": resolved["databricks"]["workspace_id"], "catalog": spec["catalog"]}, uc_instructions, UC_DOC)
         db = self.db_factory(resolved["databricks"]["host"], spec["profile"])
-        db.get("catalogs", spec["catalog"])
+        if demo != "federation":
+            db.get("catalogs", spec["catalog"])
         warehouse = spec["warehouse"]
         if warehouse["mode"] == "reuse":
             warehouse_id = warehouse["id"]
@@ -237,11 +248,15 @@ class Workflow:
         self.fabric.reconcile(f"/workspaces/{workspace}/items/{result['id']}", result,
                               {"displayName": display_name, "type": item_type, "description": self.marker})
         if definition:
-            actual = self.fabric.definition(workspace, result["id"])
+            actual = self.fabric.definition(workspace, result["id"], format="ipynb") if item_type == "Notebook" else self.fabric.definition(workspace, result["id"])
             expected_parts = {p["path"]: json.loads(base64.b64decode(p["payload"])) for p in definition["parts"]}
-            actual_parts = {p["path"]: json.loads(base64.b64decode(p["payload"])) for p in actual["parts"]}
+            actual_parts = {p["path"]: json.loads(base64.b64decode(p["payload"]))
+                            for p in actual["parts"] if p["path"] in expected_parts}
             for part, expected in expected_parts.items():
-                if actual_parts.get(part) != expected:
+                live = actual_parts.get(part)
+                matches = (live is not None and notebook_content(live) == notebook_content(expected)
+                           if item_type == "Notebook" else live == expected)
+                if not matches:
                     raise DeploymentError("Fabric definition differs from the approved deployment payload.")
         return result["id"]
 
@@ -589,6 +604,9 @@ class Workflow:
         workspace = self.workspace(demo, spec, capacity)
         if demo == "power-bi":
             result = self.native_powerbi(demo, spec, workspace, db, warehouse)
+        elif demo == "federation":
+            from .federation import deploy
+            result = deploy(self, spec, workspace, db, warehouse)
         elif demo == "onelake":
             managed = self.onelake_location(demo, "onelake", spec, workspace, db)
             schema = self.producer(demo, "onelake", spec, db, warehouse, managed)
@@ -604,6 +622,10 @@ class Workflow:
         self.console.output("OPTIONAL END-TO-END COST WARNING: SQL scans, Spark, Power BI/report tests and any append/refresh can incur extra charges.")
         if not self.console.confirm(f"Run optional end-to-end checks for {demo} now?"):
             result["optional_checks"] = "not run; no affirmative consent"
+            return
+        if demo == "federation":
+            from .federation import optional_checks
+            optional_checks(self, result, db, warehouse)
             return
         schema = result.get("schema") or result["schemas"][0]
         fact = qualified(self.config["demos"][demo]["catalog"], schema, "FactSales")

@@ -8,7 +8,7 @@ import re
 from demos.common.star_schema import StarSchemaConfig
 from .safety import DeploymentError, guid, name, nonsecret, url
 
-DEMOS = ("onelake", "power-bi", "compatibility")
+DEMOS = ("onelake", "power-bi", "compatibility", "federation")
 
 
 def workspace_display_name(value):
@@ -79,7 +79,7 @@ def collect(console: Console, selection=None):
         if common is None or not shared:
             common = {"capacity": resource(console, "capacity"), "databricks": resource(console, "databricks")}
         spec = {"foundation": common, "prefix": name(console.ask("Unique demo prefix")),
-                "catalog": name(console.ask("Explicit parent Unity Catalog name")),
+                "catalog": name(console.ask("Independent foreign catalog name" if demo == "federation" else "Explicit parent Unity Catalog name")),
                 "profile": console.ask("Databricks unified-auth profile (no tokens)"),
                 "warehouse": {"mode": console.choose("SQL warehouse", ("reuse", "create"))}}
         if spec["warehouse"]["mode"] == "reuse":
@@ -96,8 +96,12 @@ def collect(console: Console, selection=None):
         else:
             spec["identity_resource_id"] = console.ask("Access connector Azure resource ID (create manually if absent)")
             spec["identity_object_id"] = guid(console.ask("Access connector managed identity object ID"))
-            spec["credential"] = name(console.ask("Existing writable, workspace-isolated UC storage credential"))
-            spec["file_events"] = console.choose("Explicit file-events mode", ("disabled", "automatic", "provided"))
+            spec["credential"] = name(console.ask("Existing read-only managed-identity storage credential" if demo == "federation" else "Existing writable, workspace-isolated UC storage credential"))
+            if demo == "federation":
+                spec["connection"] = {"mode": console.choose("Workspace-specific OneLake UC connection", ("create", "reuse")),
+                                      "name": name(console.ask("OneLake UC connection name"))}
+            else:
+                spec["file_events"] = console.choose("Explicit file-events mode", ("disabled", "automatic", "provided"))
         if demo == "compatibility":
             spec["output_root"] = console.ask("Dedicated ADLS output root ABFSS URL (no SAS)")
             spec["output_external_location"] = name(console.ask("Existing ADLS UC external location covering that root"))
@@ -145,7 +149,16 @@ def validate(config):
     for demo, spec in config["demos"].items():
         fields(spec, ("prefix", "catalog", "profile", "warehouse", "workspace", "foundation", "storage_mode",
                       "identity_resource_id", "identity_object_id", "credential", "file_events",
-                      "output_root", "output_external_location"))
+                      "output_root", "output_external_location", "connection"))
+        if demo != "federation" and "connection" in spec:
+            raise DeploymentError("OneLake catalog connection is only used by federation.")
+        if demo == "federation":
+            if any(k in spec for k in ("file_events", "output_root", "output_external_location", "storage_mode")):
+                raise DeploymentError("Federation must not contain writable storage, file-events or publication inputs.")
+            fields(spec["connection"], ("mode", "name"))
+            if spec["connection"]["mode"] not in ("create", "reuse"):
+                raise DeploymentError("Connection mode must be create or reuse.")
+            name(spec["connection"]["name"])
         if demo == "power-bi" and any(k in spec for k in ("credential", "file_events", "output_root", "identity_resource_id")):
             raise DeploymentError("Power BI configuration must not contain unrelated storage inputs.")
         fields(spec["workspace"], ("mode", "name", "id"))
@@ -201,7 +214,7 @@ def validate(config):
             arm_id(spec["identity_resource_id"], config["subscription_id"], "Databricks/accessConnectors")
             guid(spec["identity_object_id"])
             name(spec["credential"])
-            if spec["file_events"] not in ("disabled", "automatic", "provided"):
+            if demo != "federation" and spec["file_events"] not in ("disabled", "automatic", "provided"):
                 raise DeploymentError("Explicitly select file-events mode.")
         if demo == "compatibility":
             url(spec["output_root"], ("dfs.core.windows.net",), "abfss")
@@ -210,9 +223,19 @@ def validate(config):
                 raise DeploymentError("Use a dedicated ADLS folder with an unsigned ABFSS URL.")
             name(spec["output_external_location"])
     namespaces = set()
+    foreign_catalogs = set()
     for demo, spec in config["demos"].items():
         target = spec["foundation"]["databricks"]
         workspace_identity = target.get("resource_id", target.get("name")).lower()
+        if demo == "federation":
+            identity = (workspace_identity, spec["catalog"].lower())
+            if identity in foreign_catalogs or any(
+                other != demo and s["catalog"].lower() == spec["catalog"].lower()
+                and s["foundation"]["databricks"] == target
+                for other, s in config["demos"].items()
+            ):
+                raise DeploymentError("Foreign catalog must be independent of every parent catalog.")
+            foreign_catalogs.add(identity)
         suffixes = ("normal", "compat") if demo == "compatibility" else ("powerbi",) if demo == "power-bi" else ("onelake",)
         for suffix in suffixes:
             namespace = (workspace_identity, spec["catalog"].lower(), (spec["prefix"] + "_" + suffix).lower())

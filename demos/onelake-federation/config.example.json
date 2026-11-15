@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "tenant_id": "00000000-0000-0000-0000-000000000001",
+  "subscription_id": "00000000-0000-0000-0000-000000000002",
+  "region": "westus3",
+  "resource_group": "demo",
+  "timeout": 1800,
+  "shared_foundation": false,
+  "sample": {"date_rows": 365, "product_rows": 20, "customer_rows": 100, "sales_rows": 10000, "seed": 42},
+  "demos": {
+    "federation": {
+      "prefix": "demo4sales",
+      "catalog": "demo4_fabric_sales",
+      "profile": "DEMO",
+      "foundation": {
+        "capacity": {"mode": "reuse", "resource_id": "/subscriptions/00000000-0000-0000-0000-000000000002/resourceGroups/demo/providers/Microsoft.Fabric/capacities/democap"},
+        "databricks": {"mode": "reuse", "resource_id": "/subscriptions/00000000-0000-0000-0000-000000000002/resourceGroups/demo/providers/Microsoft.Databricks/workspaces/demodb"}
+      },
+      "warehouse": {"mode": "reuse", "id": "1234567890abcdef"},
+      "workspace": {"mode": "create", "name": "OneLake federation demo"},
+      "identity_resource_id": "/subscriptions/00000000-0000-0000-0000-000000000002/resourceGroups/demo/providers/Microsoft.Databricks/accessConnectors/onelake",
+      "identity_object_id": "00000000-0000-0000-0000-000000000003",
+      "credential": "existing_readonly_credential",
+      "connection": {"mode": "create", "name": "demo4_onelake"}
+    }
+  }
+}

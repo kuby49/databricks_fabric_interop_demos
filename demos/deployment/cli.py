@@ -4,14 +4,14 @@ import argparse
 import json
 from pathlib import Path
 
-from .config import Console, collect, validate
+from .config import DEMOS, Console, collect, validate
 from .safety import DeploymentError, State, Waiting, nonsecret, write_private
 from .workflow import Workflow
 
 
 def main(argv=None, console=None, factory=Workflow):
     parser = argparse.ArgumentParser(description="Guided Databricks/Fabric demo deployment. Default: offline configuration only.")
-    parser.add_argument("--demo", choices=("onelake", "power-bi", "compatibility", "all"))
+    parser.add_argument("--demo", choices=(*DEMOS, "all"))
     parser.add_argument("--directory", type=Path, default=Path(".demo-deploy"),
                         help="Private config/state directory; keep it out of version control")
     parser.add_argument("--config", type=Path, help="Read an existing non-secret guided-deployer JSON config")
@@ -35,7 +35,7 @@ def main(argv=None, console=None, factory=Workflow):
             raise DeploymentError("Configuration is missing. Run --action configure first.")
         config = json.loads(config_path.read_text(encoding="utf-8"))
         validate(config)
-        if args.demo and set(config["demos"]) != ({"onelake", "power-bi", "compatibility"} if args.demo == "all" else {args.demo}):
+        if args.demo and set(config["demos"]) != (set(DEMOS) if args.demo == "all" else {args.demo}):
             raise DeploymentError("Demo selection differs from the saved config.")
         if args.action in ("resume", "status") and not state_path.exists():
             raise DeploymentError("Resume/status requires the original state; never reconstruct it from names.")

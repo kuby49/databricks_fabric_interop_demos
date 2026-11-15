@@ -1,6 +1,6 @@
 # Databricks + Microsoft Fabric interop demos
 
-This repository contains three deployed demonstrations of Databricks data in Fabric, with documented limitations:
+This repository contains four independently selectable Databricks/Fabric demonstrations, with documented limitations:
 
 The [proposed specification](demo-specification-proposed.md) is historical; the [final implementation specification](demos/demo-specification.md) is canonical.
 
@@ -9,6 +9,7 @@ The [proposed specification](demo-specification-proposed.md) is historical; the 
 | [OneLake external location](demos/one-lake/README.md) | Databricks Unity Catalog managed Delta tables stored in a Fabric Azure Databricks Storage item, surfaced to Fabric through a mirrored Azure Databricks catalog | Shared storage access, read/write from Databricks, read-only Fabric SQL analytics endpoint, and propagation latency |
 | [Publish to Power BI](demos/power-bi/README.md) | Databricks' native **Publish to Power BI** feature | UC primary/foreign-key relationship propagation, semantic-model mode, dimension filtering, and source-change visibility |
 | [Compatibility Mode](demos/compatibility-mode/README.md) | OneLake catalog-commit sources, a normal mirrored catalog, and Lakehouse shortcuts to user-approved ADLS compatibility outputs | Four normal tables and five generated outputs queried; the selected normal MV was not exposed by its mirror |
+| [OneLake catalog federation](demos/onelake-federation/README.md) | Fabric Lakehouse Delta tables queried directly by Databricks through a workspace-specific OneLake connection and independent UC foreign catalog | Read-only SQL/Spark access and controlled Fabric append visibility; see live evidence for actual status |
 
 These are not interchangeable paths: the OneLake demo uses shared underlying Delta storage and Fabric's mirrored catalog; the Power BI demo publishes a semantic model from Databricks and does not use Fabric mirroring.
 
@@ -21,7 +22,7 @@ The historical selected Databricks workspace and Unity Catalog parent catalog ar
 ## Guided deployment
 
 Use the [cross-platform guided deployer](demos/deployment/README.md) for a fresh,
-independent deployment of one demo or all three:
+independent deployment of one demo or all four:
 
 ```text
 python -m pip install -r requirements-deploy.txt
@@ -43,6 +44,12 @@ cost consent. Keep the ignored private config/state for safe
 The deployer has offline simulated-service coverage, not live compatibility
 certification. Historical names, approvals and manifests are not portable
 defaults or approval to deploy again.
+
+Demo 4 reverses the data direction: Fabric produces the shared deterministic
+sales schema and Databricks reads it without copying. Select `--demo federation`;
+the foreign catalog is a new top-level UC object, never nested in an existing
+parent catalog. Its [manual gates and evidence](demos/onelake-federation/README.md)
+distinguish setup-only verification from separately confirmed SQL/Spark/append checks.
 
 ## Offline preparation checks
 

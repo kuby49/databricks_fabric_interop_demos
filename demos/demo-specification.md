@@ -176,3 +176,28 @@ Local-only preparation may include source code, SQL, documentation, static check
 - [Publish to the Power BI service from Azure Databricks](https://learn.microsoft.com/en-us/azure/databricks/partners/bi/power-bi/service)
 
 Recheck preview status, prerequisites, and documentation during the separately approved deployment. Documentation is not evidence that a feature is enabled in the target tenant.
+
+# Fourth demo: OneLake catalog federation
+
+The [federation runbook](onelake-federation/README.md) extends this specification
+with a fourth independently selectable `federation` deployment. Fabric owns a
+dedicated schema-enabled Lakehouse and the same deterministic four-table sales
+star schema. A verified read-only managed-identity storage credential and a
+OneLake UC connection for that **exact workspace** expose the Lakehouse in an
+independently named **FOREIGN CATALOG**. No copying, writable external location,
+mirror, compatibility output or semantic-model publication is involved.
+
+Reuse the existing metastore, Databricks workspace and capacity only by verified
+identity. A foreign catalog cannot be nested in the existing parent catalog.
+Verify tenant API/external-app/SAS settings, workspace delegated SAS, Viewer plus
+Lakehouse OneLake read access, network access, SQL warehouse 2025.40+ and DBR
+18.0+ standard access mode. Shared tenant policies are never changed silently.
+
+The guided deployer includes demo 4 in `all`, with explicit write/cost consent,
+private non-secret operation state, collision checks and no automatic cleanup.
+Setup runs only the bound baseline notebook; separately confirmed E2E evidence
+compares all rows in both Databricks SQL and Spark. A separately confirmed
+10-row Fabric append records actual Delta commit time/version and visibility
+observations against one fixed deadline. Completed setup/jobs are not E2E passes.
+Actual live outcomes belong in the demo's deployment manifest, not inferred from
+these requirements. The previous three-demo specification remains above.

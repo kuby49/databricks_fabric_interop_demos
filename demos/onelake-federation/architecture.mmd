@@ -1,0 +1,23 @@
+flowchart LR
+    subgraph Fabric["Dedicated Fabric workspace"]
+        Seed["Shared deterministic generator"]
+        Base["Baseline notebook"]
+        Append["Guarded 10-row append"]
+        Lake["Lakehouse: four Delta tables"]
+        SAS["Workspace delegated SAS"]
+        Seed --> Base --> Lake
+        Seed --> Append --> Lake
+        SAS --> Lake
+    end
+    Identity["Existing access connector MI"]
+    Credential["Verified read-only UC credential"]
+    Connection["OneLake connection: exact workspace"]
+    Foreign["Independent UC FOREIGN CATALOG"]
+    SQL["Databricks SQL 2025.40+"]
+    Spark["DBR 18+ standard Spark"]
+    Evidence["Exact reference + UTC evidence"]
+    Identity --> Credential --> Connection --> Foreign
+    Identity -. "Viewer + item OneLake read" .-> Lake
+    Lake -. "No copy; read-only" .-> Foreign
+    Foreign --> SQL --> Evidence
+    Foreign --> Spark --> Evidence

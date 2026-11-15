@@ -23,6 +23,23 @@ VERSIONS = {"capacity": "2023-11-01", "databricks": "2024-05-01"}
 TYPES = {"capacity": "Microsoft.Fabric/capacities", "databricks": "Microsoft.Databricks/workspaces"}
 
 
+def notebook_content(body):
+    """Compare executable content while allowing Fabric UI-generated metadata."""
+    metadata = body["metadata"]
+    bindings = [metadata[key]["lakehouse"] for key in ("trident", "dependencies")
+                if "lakehouse" in metadata.get(key, {})]
+    if bindings and any(binding != bindings[0] for binding in bindings):
+        raise DeploymentError("Notebook contains conflicting Lakehouse bindings.")
+    return {
+        "kernelspec": metadata["kernelspec"],
+        "lakehouse": bindings[0] if bindings else None,
+        "cells": [{"type": cell["cell_type"], "source": "".join(cell["source"]),
+                   "metadata": {key: value for key, value in cell.get("metadata", {}).items()
+                                if key != "microsoft"}}
+                  for cell in body["cells"]],
+    }
+
+
 def azure_cli(arguments):
     executable = shutil.which("az")
     if not executable:
@@ -153,7 +170,7 @@ class Azure:
 
     def authenticate(self):
         token = self.cli(["account", "get-access-token", "--resource", ARM,
-                          "--tenant", self.config["tenant_id"], "--subscription", self.config["subscription_id"]])
+                          "--subscription", self.config["subscription_id"]])
         return {"Authorization": "Bearer " + token["accessToken"]}
 
     def preflight(self):
@@ -317,8 +334,11 @@ class Fabric:
         if actual.get("id") != expected["id"]:
             raise DeploymentError("Fabric immutable resource ID changed.")
 
-    def definition(self, workspace, item):
-        response = self.http.request("POST", f"/workspaces/{workspace}/items/{item}/getDefinition")
+    def definition(self, workspace, item, format=None):
+        path = f"/workspaces/{workspace}/items/{item}/getDefinition"
+        if format:
+            path += "?format=" + quote(format, safe="")
+        response = self.http.request("POST", path, {})
         if response.status == 202:
             operation = response.headers.get("x-ms-operation-id")
             if not operation:

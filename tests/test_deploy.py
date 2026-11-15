@@ -336,13 +336,13 @@ class DeploymentTests(unittest.TestCase):
                 self.assertEqual({r["status"] for r in results.values()}, {"setup-checked"}, results)
                 before = len(cloud.sql)
                 before_writes = len([sql for sql in cloud.sql if not sql.startswith("DESCRIBE")])
-                writes = sum(c[0] in ("POST", "PUT") and not c[1].endswith("/getDefinition") for c in cloud.calls if len(c) == 3)
+                writes = sum(c[0] in ("POST", "PUT") and not c[1].split("?")[0].endswith("/getDefinition") for c in cloud.calls if len(c) == 3)
                 results = cloud.workflow(cfg, State(state.path, cfg), operator).run()
                 self.assertEqual(len([sql for sql in cloud.sql if not sql.startswith("DESCRIBE")]), before_writes)
                 new_calls = cloud.calls
                 # Compatibility resource setup legitimately rereads SQL version metadata on resume.
                 metadata_queries = len([sql for sql in cloud.sql[before:] if sql.startswith("DESCRIBE")])
-                self.assertEqual(sum(c[0] in ("POST", "PUT") and not c[1].endswith("/getDefinition") for c in new_calls if len(c) == 3),
+                self.assertEqual(sum(c[0] in ("POST", "PUT") and not c[1].split("?")[0].endswith("/getDefinition") for c in new_calls if len(c) == 3),
                                  writes + metadata_queries)
                 for demo in selected:
                     schemas = results[demo].get("schemas", [results[demo].get("schema")])
