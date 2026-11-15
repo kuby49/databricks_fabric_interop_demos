@@ -11,6 +11,15 @@ from .safety import DeploymentError, guid, name, nonsecret, url
 DEMOS = ("onelake", "power-bi", "compatibility")
 
 
+def workspace_display_name(value):
+    nonsecret(value)
+    if not isinstance(value, str) or not value.strip() or not 1 <= len(value) <= 256:
+        raise DeploymentError("Fabric workspace display names must contain 1-256 characters and cannot be blank.")
+    if value.casefold() == "admin monitoring":
+        raise DeploymentError("Admin monitoring is a reserved Fabric workspace name.")
+    return value
+
+
 class Console:
     def __init__(self, read=input, output=print):
         self.read = read
@@ -81,7 +90,7 @@ def collect(console: Console, selection=None):
         spec["workspace"] = {"mode": console.choose("Dedicated Fabric workspace", ("create", "reuse"))}
         if spec["workspace"]["mode"] == "reuse":
             spec["workspace"]["id"] = guid(console.ask("Exact dedicated Fabric workspace ID"))
-        spec["workspace"]["name"] = name(console.ask("Fabric workspace name"))
+        spec["workspace"]["name"] = workspace_display_name(console.ask("Fabric workspace display name"))
         if demo == "power-bi":
             spec["storage_mode"] = console.choose("Native Power BI publication mode", ("DirectQuery", "Import"), "DirectQuery")
         else:
@@ -145,7 +154,7 @@ def validate(config):
             name(spec[field])
         if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{1,39}", spec["prefix"]):
             raise DeploymentError("Demo prefixes must be 2-40 letters/digits/underscores for Fabric item names.")
-        name(spec["workspace"]["name"])
+        workspace_display_name(spec["workspace"]["name"])
         if spec["workspace"]["mode"] == "reuse":
             guid(spec["workspace"]["id"])
         elif spec["workspace"]["mode"] != "create":

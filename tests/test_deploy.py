@@ -10,13 +10,13 @@ import sqlite3
 import tempfile
 import unittest
 import weakref
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from urllib.parse import unquote, urlsplit
 from uuid import uuid4
 
 from demos.common.star_schema import TABLE_COLUMN_TYPES, generate_star_schema, StarSchemaConfig
 from demos.deployment.cli import main
-from demos.deployment.config import Console, collect, validate
+from demos.deployment.config import Console, collect, validate, workspace_display_name
 from demos.deployment.safety import DeploymentError, State, Waiting, digest, nonsecret, write_private
 from demos.deployment.services import ADLS, ARM, FABRIC, Azure, Databricks, Fabric, HTTP, Response
 from demos.deployment.sql import MV, TABLES, aggregate_select, create_table, inserts, literal
@@ -433,14 +433,102 @@ class DeploymentTests(unittest.TestCase):
         answers = iter(["power-bi", TENANT, SUB, "westeurope", "demo", "42", "10000", "900",
                         "reuse", f"/subscriptions/{SUB}/resourceGroups/demo/providers/Microsoft.Fabric/capacities/democap",
                         "reuse", f"/subscriptions/{SUB}/resourceGroups/demo/providers/Microsoft.Databricks/workspaces/demodb",
-                        "pbi", "parent", "OFFLINE", "reuse", WAREHOUSE, "create", "pbiworkspace", "DirectQuery"])
+                        "pbi", "parent", "OFFLINE", "reuse", WAREHOUSE, "create", "New workspace", "DirectQuery"])
         prompts = []
         def read(label):
             prompts.append(label)
             return next(answers)
         result = collect(Console(read, lambda s: None))
         self.assertEqual(set(result["demos"]), {"power-bi"})
+        self.assertEqual(result["demos"]["power-bi"]["workspace"]["name"], "New workspace")
         self.assertFalse(any("credential" in p or "ADLS" in p or "connector" in p for p in prompts))
+
+    def test_unconfigured_profile_gate_precedes_client_and_safe_resume(self):
+        cfg = config(create=True)
+        cloud = SimulatedCloud(cfg)
+        configured = [False]
+        constructed = []
+        def factory(cfg, state, console):
+            workflow = cloud.workflow(cfg, state, console)
+            original = workflow.db_factory
+            def initialize(host, profile):
+                constructed.append(profile)
+                if not configured[0]:
+                    raise DeploymentError("Profile is not configured yet.")
+                self.assertIn("onelake/uc", state.data["gates"])
+                return original(host, profile)
+            workflow.db_factory = initialize
+            return workflow
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "state.json"
+            operator = Operator(cloud, deny="onelake/uc")
+            result = factory(cfg, State(path, cfg), operator).run()
+            self.assertEqual(result["onelake"]["status"], "waiting", result)
+            self.assertEqual(constructed, [])
+            self.assertFalse(cloud.sql)
+            self.assertTrue(any("profile OFFLINE for https://adb-123.azuredatabricks.net" in line for line in operator.lines))
+            creations = len([c for c in cloud.calls if c[0] == "PUT"])
+            self.assertEqual(creations, 2)
+            operator = Operator(cloud)
+            original_confirm = operator.confirm
+            def complete_profile(label):
+                approved = original_confirm(label)
+                if operator.key == "onelake/uc" and approved:
+                    configured[0] = True
+                return approved
+            operator.confirm = complete_profile
+            result = factory(cfg, State(path, cfg), operator).run()
+            self.assertEqual(result["onelake"]["status"], "setup-checked", result)
+            self.assertEqual(constructed, ["OFFLINE"])
+            self.assertEqual(len([c for c in cloud.calls if c[0] == "PUT"]), creations)
+            self.assertTrue(any("/unity-catalog/catalogs/parent" in c[1] for c in cloud.calls if len(c) == 3))
+
+    def test_unavailable_mv_backing_location_pauses_without_recreating(self):
+        cfg = config(("compatibility",))
+        cloud = SimulatedCloud(cfg)
+        with tempfile.TemporaryDirectory() as directory:
+            state = State(Path(directory) / "state.json", cfg)
+            workflow = cloud.workflow(cfg, state, Operator(cloud, deny="mv/backing-location"))
+            metadata = {"table_id": TENANT, "table_type": "MATERIALIZED_VIEW", "comment": workflow.marker}
+            db = Mock()
+            db.get.side_effect = lambda kind, full_name, missing=False: None if missing else metadata
+            db.submit_sql.return_value = {"statement_id": SUB}
+            root = f"abfss://{TENANT}@onelake.dfs.fabric.microsoft.com/{SUB}/Files/managed"
+            for _ in range(2):
+                with self.assertRaises(Waiting):
+                    workflow.uc_create("mv", db, WAREHOUSE, "tables", "parent.compat.mv",
+                                       "CREATE MATERIALIZED VIEW `parent`.`compat`.`mv`", root)
+            self.assertEqual(db.submit_sql.call_count, 1)
+            self.assertEqual(state.data["steps"]["mv"]["status"], "submitted")
+            self.assertNotIn("uc-storage/parent.compat.mv", state.data["inputs"])
+
+    def test_workspace_display_names_create_and_reuse_without_relaxing_identifiers(self):
+        long_name = "New workspace " + "x" * (256 - len("New workspace "))
+        for mode, display_name in (("create", "New workspace"), ("reuse", long_name)):
+            cfg = config(("power-bi",))
+            cloud = SimulatedCloud(cfg)
+            spec = cfg["demos"]["power-bi"]
+            spec["workspace"].update(mode=mode, name=display_name)
+            if mode == "reuse":
+                workspace = str(uuid4())
+                spec["workspace"]["id"] = workspace
+                cloud.items[workspace] = {"id": workspace, "type": "Workspace", "displayName": display_name, "capacityId": CAP}
+            validate(cfg)
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
+                result = cloud.workflow(cfg, State(Path(directory) / "state.json", cfg), Operator(cloud)).run()
+                self.assertEqual(result["power-bi"]["status"], "setup-checked", result)
+                self.assertEqual(cloud.items[result["power-bi"]["workspace"]]["displayName"], display_name)
+        for value in ("", " ", "x" * 257, "Admin monitoring"):
+            with self.subTest(value=value), self.assertRaises(DeploymentError):
+                workspace_display_name(value)
+        for field in ("catalog", "prefix"):
+            cfg["demos"]["power-bi"][field] = "Invalid identifier"
+            with self.assertRaises(DeploymentError):
+                validate(cfg)
+            cfg["demos"]["power-bi"][field] = "valid"
+        cfg["resource_group"] = "Invalid group"
+        with self.assertRaises(DeploymentError):
+            validate(cfg)
 
     def test_offline_cli_configure_persists_no_cloud_calls(self):
         cfg = config(("power-bi",))

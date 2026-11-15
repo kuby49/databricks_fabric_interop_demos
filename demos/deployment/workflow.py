@@ -176,12 +176,13 @@ class Workflow:
             "In Azure/Fabric capacity administration, verify this immutable Fabric capacity GUID belongs to the exact ARM resource and tenant.",
             "Verify matching regions, F SKU availability/quotas, license, capacity-assignment permission and tenant policies. What-If is not a quota or license guarantee.",
         ], "https://learn.microsoft.com/en-us/fabric/admin/capacity-settings")
-        db = self.db_factory(resolved["databricks"]["host"], spec["profile"])
         self.gate(demo + "/uc", {"workspace_id": resolved["databricks"]["workspace_id"], "catalog": spec["catalog"]}, [
             "For a new workspace, have an account/metastore administrator attach a Unity Catalog metastore and create or explicitly approve the named parent catalog with suitable managed storage.",
-            "Configure the selected Databricks unified-auth profile for this exact workspace. Verify UC, serverless SQL availability and USE CATALOG/CREATE SCHEMA; do not change other workloads.",
+            f"Configure Databricks unified-auth profile {spec['profile']} for {resolved['databricks']['host']}. Verify UC, serverless SQL availability and USE CATALOG/CREATE SCHEMA; do not change other workloads.",
             "For OneLake, enable its workspace preview and use serverless or DBR 18.1+. For native MVs verify the required serverless entitlement. Obtain approval separately for any shared policy or permission change.",
-        ], UC_DOC, lambda: db.get("catalogs", spec["catalog"]))
+        ], UC_DOC)
+        db = self.db_factory(resolved["databricks"]["host"], spec["profile"])
+        db.get("catalogs", spec["catalog"])
         warehouse = spec["warehouse"]
         if warehouse["mode"] == "reuse":
             warehouse_id = warehouse["id"]
@@ -459,6 +460,12 @@ class Workflow:
         provenance = {}
         for table in (*TABLES, MV):
             source = db.get("tables", spec["catalog"] + "." + compat + "." + table)
+            if table == MV:
+                self.gate(demo + "/mv-backing-identity", {"mv_id": source["table_id"], "name": spec["catalog"] + "." + compat + "." + table}, [
+                    "Establish the actual backing-table GUID from this MV's UC/pipeline metadata and compare it to the generated output's clone source GUID. The native MV GUID itself is not its backing-table GUID.",
+                    "The historical deployment recorded backing GUIDs and reported OneLake backing locations; the actual backing protocol was unavailable (EXPECT_TABLE_NOT_VIEW, OneLake 403 and LOCATION_OVERLAP). Those errors do not prove that IDs or locations are unavailable in every workspace.",
+                    "If the actual backing GUID cannot be established here, answer no and preserve all recorded resources/refreshes. Obtain supported metadata access or vendor clarification; never infer an ID from a different MV or bypass provenance checks.",
+                ], COMPAT_DOC)
             source_id = (self.input(demo + "/backing-id", "Actual compatibility MV backing-table GUID from its metadata/log evidence")
                          if table == MV else source["table_id"])
             observed_clone_id = self.input(demo + "/clone-source/" + table,

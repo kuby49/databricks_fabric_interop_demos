@@ -14,16 +14,27 @@ Obtain separate approval before any live preview, deployment or chargeable test.
 ## Installation and configuration
 
 Use Python 3.10+ and [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli).
-From the repository root, on Windows, macOS or Linux:
+From the repository root, create and activate the virtual environment **before**
+installing dependencies.
 
-```text
+Windows PowerShell:
+
+```powershell
 python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-deploy.txt
 python -m demos.deploy --demo all --action configure
 ```
 
-Activate the environment first: Windows PowerShell uses
-`.venv\Scripts\Activate.ps1`; macOS/Linux use `source .venv/bin/activate`.
+macOS/Linux:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-deploy.txt
+python -m demos.deploy --demo all --action configure
+```
+
 The `configure` and `status` actions are offline and need no installed SDK or
 cloud sign-in. The Azure CLI and SDK are needed only for live actions.
 
@@ -36,7 +47,7 @@ Choose `onelake`, `power-bi`, `compatibility`, or `all`. Configuration prompts f
 | Databricks create/reuse, exact ARM ID, or new Premium name/managed resource group/networking | Per foundation |
 | Explicit sharing of capacity and Databricks workspace | Only `all` |
 | Independent 2-40-character letters/digits/underscore prefix, catalog, named unified-auth profile, create/reuse SQL warehouse | Each demo |
-| Independent Fabric workspace name, create/reuse and exact ID | Each demo |
+| Independent Fabric workspace display name (1-256 characters, spaces allowed), create/reuse and exact ID | Each demo |
 | Access connector resource/object IDs, writable isolated credential, explicit file-events mode | OneLake and compatibility |
 | Dedicated unsigned ADLS root and existing UC external location | Compatibility only |
 | DirectQuery (default) or explicitly selected Import | Native Power BI only |
@@ -272,3 +283,15 @@ The historical normal-MV discovery gap and actual MV backing-protocol gap remain
 observations, not universal product limits. No catalog-commit feature is disabled,
 no plain Delta copy substitutes for Compatibility Mode, and no externally
 registered copy substitutes for a generated output.
+
+**MV metadata feasibility:** the historical manifest records both native MVs'
+backing-table GUIDs and reports OneLake backing locations. Its failed
+`DESCRIBE DETAIL` by name (`EXPECT_TABLE_NOT_VIEW`), OneLake 403, and direct-path
+`LOCATION_OVERLAP` checks prevented verification of the **actual backing
+protocol**, not those recorded identities/locations. They cannot guarantee the
+same metadata will be accessible in a fresh environment. If this run cannot
+establish a required backing GUID or OneLake path, answer `no` at its dedicated
+checkpoint. The run stays waiting with the create/refresh handles intact;
+independent demos can continue. Seek supported UC/pipeline metadata access or
+vendor clarification and resume the same run. Do not reuse historical GUIDs,
+infer an ID/path, weaken provenance, replace the native MV or remove catalog commits.
