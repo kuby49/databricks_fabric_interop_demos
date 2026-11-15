@@ -1,5 +1,19 @@
 # Compatibility Mode demo
 
+For a fresh independent deployment, use the [guided Python CLI](../deployment/README.md):
+`python -m demos.deploy --demo compatibility --action configure`, then separately
+approved preview/apply. Its executable SQL is generated from the shared model,
+not by running the unresolved design template. It creates two OneLake-backed
+catalog-commit producers and native MVs, enables genuine separate read-only ADLS
+outputs, performs required initial loads/refreshes, and creates the normal mirror,
+direct output shortcuts and an actually bound Fabric notebook. It pauses before
+identity/location setup, seven-day/empty-output eligibility, freshness/provenance,
+and real normal mirror discovery. Default checks do not run Fabric Spark or claim
+end-to-end equality. Output generation/refresh and capacity can incur ongoing
+charges; optional tests need separate consent. Keep private state for safe resume.
+The historical discovery/backing-protocol observations below are preserved, not
+asserted to be universal limits or new deployer test results.
+
 **Status: deployed with a normal-MV mirror discovery gap.** The four normal
 tables and five generated compatibility outputs are online and validated.
 The normal native MV exists and refreshes in Databricks, but its selected

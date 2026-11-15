@@ -14,6 +14,22 @@ The first path demonstrates shared underlying storage with a catalog mirror; the
 
 ## Defaults, isolation, and approval
 
+For fresh deployments, the [guided cross-platform deployer](deployment/README.md)
+asks for tenant/subscription/region, create/reuse capacity and Databricks workspace,
+independent Fabric workspaces/UC namespaces, compute, identity/connection/storage
+settings and demo-specific prerequisites. It has no historical tenant/resource
+defaults. Sharing infrastructure requires an explicit selection; all demos also
+deploy separately. New cloud writes, required initial loading and MV/compatibility
+refreshes require a cost-bearing preview/confirmation. Default verification checks
+resource identities/definitions and checkpoint state; end-to-end data/report/
+append/propagation checks are separately confirmed and their manual evidence is
+labeled. Numbered, officially linked manual gates cover shared/admin settings,
+native publishing and unverifiable location history/provenance. Preserve exact
+non-secret IDs/ownership/progress for safe resume; do not replay uncertain writes.
+
+The following defaults and approvals apply to the **historical recorded
+deployment**, not to new guided-deployer runs:
+
 | Setting | Default |
 |---|---|
 | Environment | MCAP |
@@ -138,7 +154,7 @@ Do not substitute external metadata, plain copies or removal of catalog commits.
 
 ## Local implementation, evidence, and completion
 
-Each demo directory contains its own README, implementation assets, manual instructions, sanitized ownership/evidence manifest, editable and embedded Mermaid architecture diagram, local checks, and confirmation-gated cleanup instructions. Demo 3's local SQL templates are non-executable references, not an automated or verified rerun-safe deployer. The root README links all three demos and explains their differences.
+Each demo directory contains its own README, implementation assets, manual instructions, sanitized ownership/evidence manifest, editable and embedded Mermaid architecture diagram, local checks, and confirmation-gated cleanup instructions. Demo 3's local SQL templates remain non-executable references. The separate `python -m demos.deploy` workflow generates guarded executable SQL, real Fabric payloads and notebook lakehouse binding; it does not execute those templates. Its CLI/adapters/orchestration are tested offline with simulated services, including independent/all paths and resume. This does not certify live API compatibility, cloud permissions, Databricks SQL syntax or end-to-end service behavior. Separately approved live acceptance remains required. The root README links all three demos and explains their differences.
 
 Evidence must distinguish **pass**, **fail**, and **blocked**; include timestamps, actual values, configured timeout, and sanitized errors. Do not fabricate resource IDs, test results, relationship behavior, propagation delays, or manual actions. Check a second run for duplicates and unintended data loss before claiming rerun safety.
 
