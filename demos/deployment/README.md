@@ -1,7 +1,7 @@
 # Guided demo deployment
 
-The cross-platform Python CLI provisions the three demos independently, or all
-three with **explicitly selected** shared capacity and Databricks infrastructure.
+The cross-platform Python CLI provisions four demos independently, or all
+four with **explicitly selected** shared capacity and Databricks infrastructure.
 It uses Azure ARM, Fabric public REST, and Databricks unified authentication/SQL
 Statement Execution. It does not run the historical deployment manifests or
 non-executable demo 3 SQL templates.
@@ -38,7 +38,7 @@ python -m demos.deploy --demo all --action configure
 The `configure` and `status` actions are offline and need no installed SDK or
 cloud sign-in. The Azure CLI and SDK are needed only for live actions.
 
-Choose `onelake`, `power-bi`, `compatibility`, or `all`. Configuration prompts for:
+Choose `onelake`, `power-bi`, `compatibility`, `federation`, or `all`. Configuration prompts for:
 
 | Input | When |
 |---|---|
@@ -51,6 +51,7 @@ Choose `onelake`, `power-bi`, `compatibility`, or `all`. Configuration prompts f
 | Access connector resource/object IDs, writable isolated credential, explicit file-events mode | OneLake and compatibility |
 | Dedicated unsigned ADLS root and existing UC external location | Compatibility only |
 | DirectQuery (default) or explicitly selected Import | Native Power BI only |
+| Independent foreign catalog, workspace-specific UC connection create/reuse, verified read-only MI credential | Federation only; no file-events, ADLS outputs or parent-catalog input |
 
 Additional immutable IDs are requested at their dependency checkpoint: Fabric
 capacity GUID (different from its ARM resource ID), tested connection IDs,
@@ -66,6 +67,7 @@ default. Choose separate directories for independent runs:
 python -m demos.deploy --demo onelake --directory .demo-deploy/onelake --action configure
 python -m demos.deploy --demo power-bi --directory .demo-deploy/power-bi --action configure
 python -m demos.deploy --demo compatibility --directory .demo-deploy/compat --action configure
+python -m demos.deploy --demo federation --directory .demo-deploy/federation --action configure
 ```
 
 These command arguments work cross-platform; PowerShell also accepts backslash
@@ -73,6 +75,15 @@ path separators. Every demo owns new schemas/tables/items, even when infrastruct
 is shared. Existing Fabric workspaces may be reused only by exact ID and explicit
 dedicated-workspace approval, with the selected capacity already assigned. The
 script will not change an existing capacity assignment.
+
+Federation owns a new Fabric Lakehouse, bound baseline/append notebooks and an
+independent top-level foreign catalog rather than UC managed tables. See its
+[runbook](../onelake-federation/README.md) for tenant/workspace delegated-SAS,
+least-privilege Viewer + Lakehouse OneLake-read gates and runtime requirements.
+It runs baseline loading during setup; append is never run by default.
+Optional SQL comparison is automated, while Spark/append manual evidence gates
+are explicitly operator-attested, not manufactured passes. Preserve actual
+Delta commit timestamps and the original deadline across resume.
 
 ## Authentication and preview
 
@@ -174,13 +185,14 @@ pass. API-readable prerequisites are reread on resume.
    before enabling each untouched output. It never writes files into these paths.
    See [Compatibility Mode](https://learn.microsoft.com/azure/databricks/external-access/compatibility-mode).
 7. **Compatibility generation and freshness:** required deployment statements
-   create/refresh both native MVs and refresh all five genuine compatibility
+   create/refresh one native MV in the normal producer schema and refresh all five genuine compatibility
    versions with `SYNC UNIFORM`. Inspect the four table producers' history,
    Uniform Compatibility Information and generated output Delta histories.
    Table output clone source IDs are compared to actual table IDs. The script
    verifies compatibility routing and actual output log IDs/protocol/features
    for all five outputs. Table/schema managed storage must remain beneath the
-   selected OneLake roots. MV backing location, ID, version and protocol checks
+   single normal OneLake root. There is no second producer or canary provisioning.
+   MV backing location, ID, version and protocol checks
    are excluded; missing backing metadata does not block setup and is never
    treated as verified evidence.
    The validation Lakehouse uses non-schema-enabled Tables-root shortcuts.
@@ -196,6 +208,13 @@ pass. API-readable prerequisites are reread on resume.
    outputs directly. The Fabric notebook is deployed with real
    `metadata.trident.lakehouse` binding, not merely a Python metadata comment.
    It is **not run by default**.
+
+Compatibility resume rejects legacy two-producer saved states before cloud writes;
+preserve them and perform an explicitly approved, ownership/dependency-checked
+migration instead. Never restart loading over existing tables. Missing recorded
+shortcuts are restored only from unchanged saved targets; collisions or changed
+targets block. Mirror discovery records actual resolved targets, which may
+redirect to compatibility outputs; no negative-control result is assumed.
 
 Creating an access connector, storage account/container, changing ACLs/roles,
 entering connection credentials, and shared/preview/tenant settings deliberately
@@ -299,4 +318,6 @@ backing-table GUIDs and reports OneLake backing locations. Its failed
 `LOCATION_OVERLAP` checks prevented verification of the **actual backing
 protocol**, not those recorded identities/locations. These observations are
 preserved as historical evidence only; they are not deployment blockers.
-Do not infer missing evidence, replace the native MV or remove catalog commits.
+Do not infer missing evidence or remove catalog commits. The general deployer
+never replaces existing MVs. An explicitly approved existing-demo migration may
+replace only the known demo-owned MV after ownership and dependency checks.

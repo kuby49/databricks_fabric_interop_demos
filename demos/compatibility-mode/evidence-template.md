@@ -15,7 +15,10 @@ does not reset the original deadline.
   mirror resolves that output rather than the producer: pending.
 - Destination existed and was empty, unique and eligible under the seven-day
   reuse rule: pending. Source and output features are independent.
-- Native MV type, refresh status and latest completed version: pending.
+- Native MV type and refresh status: pending. MV backing location, ID, version
+  and protocol are excluded; do not claim backing provenance/freshness.
+- One normal schema, four unchanged table IDs, one native MV and five distinct
+  ADLS outputs: pending. Obsolete demo-owned cleanup/absent resources: pending.
 
 ## Listing and querying (one row per object and engine)
 
@@ -30,11 +33,13 @@ Fill separately for `DimDate`, `DimProduct`, `DimCustomer`, `FactSales` and
 An unready mirror, absent object, timeout, authorization failure, unknown
 exception or unverified selection is **blocked/inconclusive**, not proof of
 the normal Spark limitation. A feature-specific normal Spark exclusion counts
-only after verifying the source feature, compatibility-off state, selection and
+only after verifying the actual resolved target still requires that feature, selection and
 access. Normal SQL and Spark success must be recorded honestly. For a positive
 compatibility result, first prove actual output mapping and absence of the
 `catalogManaged` reader requirement; then validate all data. Do not claim that
-source constraints propagate to the generated representation.
+source constraints propagate to the generated representation. Both routes now
+share the same normal producer; a mirror can redirect to an output. Query
+checks are optional and require separate compute-cost confirmation.
 
 ## Exact comparisons
 

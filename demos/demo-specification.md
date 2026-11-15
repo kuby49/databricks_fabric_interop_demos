@@ -111,8 +111,8 @@ Verify UC-enabled compute, a Databricks SQL warehouse, a Power BI Premium/PPU/Fa
 
 The approved design reuses the Databricks workspace, catalog, writable isolated
 credential, identity, Fabric connection and capacity, with a separate Fabric
-workspace, two Storage items and two UC schemas. Both producer sets retain
-`catalogManaged`; only the compatible set generates separate, read-only
+workspace, one normal Storage item and one normal UC schema. Its producers retain
+`catalogManaged` and generate five separate, read-only
 down-level outputs. Source and output locations and actual reader/writer
 protocols and feature lists must be recorded separately.
 For guided setup, the user explicitly excluded MV backing location, ID, version
@@ -121,7 +121,7 @@ and is not reported as verified. Required MV creation/refresh and checks of
 actual generated compatibility outputs remain; table provenance/freshness checks
 are unchanged. The historical backing evidence below is preserved separately.
 
-Each producer set contains the four baseline tables and a native sales
+The single producer schema contains the four baseline tables and one native sales
 materialized view at Day × Product × Region × Segment grain, without
 customer-level grouping. Include date and product descriptors, exact sales
 total, total quantity and line count. Verify source keys, row counts, totals,
@@ -135,7 +135,17 @@ permission or readiness failures are not successful negative controls. Check
 resolved paths, output provenance, freshness and protocol independently, with
 bounded 900-second checks.
 
-**Deployment evidence:** the OneLake compatibility destination attempt
+No compatibility producer schema/Storage item or canary is provisioned.
+Managed tables may be altered; the native MV requires compatibility properties
+at creation. Existing-demo migration preserves normal table IDs/data, uses new
+eligible empty ADLS paths, checks MV replacement dependencies and restores only
+verified mirror-based shortcuts. Delete only obsolete demo-owned resources in
+dependency order; preserve old outputs and shared infrastructure. Legacy saved
+states must not replay loads. Default verification is setup-only; end-to-end
+checks require separate cost confirmation. Inspect actual mirror targets after
+enablement; no compatibility-off negative control is guaranteed.
+
+**Historical deployment evidence (before single-source migration):** the OneLake compatibility destination attempt
 required `CREATE EXTERNAL TABLE`, while the location-scoped grant was rejected
 as inapplicable to `EXTERNAL_LOCATION_ONELAKE_MANAGED`. The approved fallback
 uses `dbxfabricinterop` ADLS only for compatibility outputs. Both native MVs
@@ -176,3 +186,28 @@ Local-only preparation may include source code, SQL, documentation, static check
 - [Publish to the Power BI service from Azure Databricks](https://learn.microsoft.com/en-us/azure/databricks/partners/bi/power-bi/service)
 
 Recheck preview status, prerequisites, and documentation during the separately approved deployment. Documentation is not evidence that a feature is enabled in the target tenant.
+
+# Fourth demo: OneLake catalog federation
+
+The [federation runbook](onelake-federation/README.md) extends this specification
+with a fourth independently selectable `federation` deployment. Fabric owns a
+dedicated schema-enabled Lakehouse and the same deterministic four-table sales
+star schema. A verified read-only managed-identity storage credential and a
+OneLake UC connection for that **exact workspace** expose the Lakehouse in an
+independently named **FOREIGN CATALOG**. No copying, writable external location,
+mirror, compatibility output or semantic-model publication is involved.
+
+Reuse the existing metastore, Databricks workspace and capacity only by verified
+identity. A foreign catalog cannot be nested in the existing parent catalog.
+Verify tenant API/external-app/SAS settings, workspace delegated SAS, Viewer plus
+Lakehouse OneLake read access, network access, SQL warehouse 2025.40+ and DBR
+18.0+ standard access mode. Shared tenant policies are never changed silently.
+
+The guided deployer includes demo 4 in `all`, with explicit write/cost consent,
+private non-secret operation state, collision checks and no automatic cleanup.
+Setup runs only the bound baseline notebook; separately confirmed E2E evidence
+compares all rows in both Databricks SQL and Spark. A separately confirmed
+10-row Fabric append records actual Delta commit time/version and visibility
+observations against one fixed deadline. Completed setup/jobs are not E2E passes.
+Actual live outcomes belong in the demo's deployment manifest, not inferred from
+these requirements. The previous three-demo specification remains above.

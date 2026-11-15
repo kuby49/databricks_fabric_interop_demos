@@ -12,6 +12,7 @@ import re
 import sys
 from typing import Any
 from uuid import UUID
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -31,29 +32,32 @@ IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 def paths(config: dict[str, Any]) -> dict[str, Any]:
     """Validate path configuration only; this does not verify resources or permissions."""
     dbx, fabric = config["databricks"], config["fabric"]
-    for key in ("parent_catalog", "normal_schema", "compat_schema"):
+    if "compat_schema" in dbx or "compat_storage_id" in fabric:
+        raise ValueError("legacy two-producer config: inventory and migrate explicitly; do not replay loads")
+    for key in ("parent_catalog", "normal_schema"):
         if not isinstance(dbx[key], str) or not IDENTIFIER.fullmatch(dbx[key]):
             raise ValueError(f"{key} must be a simple SQL identifier")
     if dbx["parent_catalog_approved"] is not True:
         raise ValueError("parent catalog must be explicitly approved")
-    if dbx["normal_schema"].casefold() == dbx["compat_schema"].casefold():
-        raise ValueError("normal and compatibility schemas must differ")
     ids = {}
-    for key in ("workspace_id", "normal_storage_id", "compat_storage_id"):
+    for key in ("workspace_id", "normal_storage_id"):
         try:
             ids[key] = str(UUID(fabric[key]))
         except (ValueError, TypeError, AttributeError) as error:
             raise ValueError(f"{key} must be a GUID") from error
-    if ids["normal_storage_id"] == ids["compat_storage_id"]:
-        raise ValueError("normal and compatibility Storage items must differ")
     base = f"abfss://{ids['workspace_id']}@onelake.dfs.fabric.microsoft.com/"
     normal = f"{base}{ids['normal_storage_id']}/Files"
-    compat = f"{base}{ids['compat_storage_id']}/Files"
+    output_root = config["deployment"]["output_root"].rstrip("/")
+    parsed = urlsplit(output_root)
+    if (parsed.scheme != "abfss" or not parsed.username or parsed.password
+            or not parsed.hostname or not parsed.hostname.endswith(".dfs.core.windows.net")
+            or parsed.query or parsed.fragment or not parsed.path.strip("/")
+            or any(p in ("", ".", "..") for p in parsed.path.strip("/").split("/"))):
+        raise ValueError("output_root must be an isolated unsigned ADLS abfss directory")
     return {
         "normal_managed": f"{normal}/managed",
-        "compat_managed": f"{compat}/managed",
         "compatibility_destinations": {
-            name: f"{compat}/compatibility/{name}" for name in OBJECTS
+            name: f"{output_root}/{name}" for name in OBJECTS
         },
     }
 
@@ -94,9 +98,10 @@ def classify(path: str, engine: str, query: str, evidence: dict[str, bool]) -> s
     if not all(evidence.get(key) is True for key in required):
         return "BLOCKED"
     if path == "normal":
-        if evidence.get("compatibility_off") is not True:
+        if evidence.get("resolved_target_verified") is not True:
             return "BLOCKED"
-        if query == "feature_exclusion" and engine == "spark":
+        if (query == "feature_exclusion" and engine == "spark"
+                and evidence.get("resolved_target_catalog_managed") is True):
             return "EXPECTED_LIMITATION_OBSERVED"
         if query == "success":
             return "OBSERVED_SUCCESS" if evidence.get("data_matches") is True else (

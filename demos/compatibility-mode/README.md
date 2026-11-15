@@ -3,8 +3,8 @@
 For a fresh independent deployment, use the [guided Python CLI](../deployment/README.md):
 `python -m demos.deploy --demo compatibility --action configure`, then separately
 approved preview/apply. Its executable SQL is generated from the shared model,
-not by running the unresolved design template. It creates two OneLake-backed
-catalog-commit producers and native MVs, enables genuine separate read-only ADLS
+not by running the unresolved design template. It creates one OneLake-backed
+normal schema with four catalog-commit tables and one native MV, enabling separate read-only ADLS
 outputs, performs required initial loads/refreshes, and creates the normal mirror,
 direct output shortcuts and an actually bound Fabric notebook. It pauses before
 identity/location setup, seven-day/empty-output eligibility, freshness/provenance,
@@ -15,21 +15,17 @@ MV backing location, ID, version and protocol verification are excluded from
 guided setup; unavailable backing metadata is not a blocker. Actual generated
 output routing, IDs/protocol/features and shortcuts remain checked, but MV
 backing-source freshness/provenance are not claimed as verified.
+No second compatibility schema, compatibility Storage item or canary is provisioned.
 The historical discovery/backing-protocol observations below are preserved, not
 asserted to be universal limits or new deployer test results.
 
-**Status: deployed with a normal-MV mirror discovery gap.** The four normal
-tables and five generated compatibility outputs are online and validated.
-The normal native MV exists and refreshes in Databricks, but its selected
-mirror item did not expose it; Fabric SQL reported an invalid object and no
-normal-MV Spark shortcut could be tested. The MV backing-source protocol could
-not be read directly. See [`deployment-manifest.json`](deployment-manifest.json).
-
-Both producer schemas use OneLake-managed storage and retain catalog commits.
-After the OneLake destination attempt failed, the user authorized ADLS fallback
-for compatibility outputs only, and replaced the proposed second mirror with
-direct shortcuts from a demo Lakehouse to those genuine generated outputs.
-The normal path still uses a mirrored Azure Databricks catalog.
+**Current design: single source.** Both access routes derive from the same
+normal producer schema; only generated outputs use ADLS. The normal path
+still uses a mirrored Azure Databricks catalog. Inspect its actual targets
+after enablement: they may redirect to generated outputs. Neither a
+compatibility-off negative control nor a particular Spark error is guaranteed.
+See [`deployment-manifest.json`](deployment-manifest.json) for observed migration
+status, immutable IDs and blockers, separately from historical results.
 
 ## Architecture
 
@@ -39,19 +35,15 @@ Edit [`architecture.mmd`](architecture.mmd); the diagram is embedded here:
 flowchart LR
   GEN["Deterministic baseline"]
   NC["Normal UC schema<br/>four tables + native MV"]
-  CC["Compatibility UC schema<br/>four tables + native MV"]
   NS["Normal OneLake Storage<br/>catalog-managed sources"]
-  CS["Compatibility OneLake Storage<br/>catalog-managed sources"]
   OUT["ADLS compatibility outputs<br/>five read-only Delta paths"]
-  NM["Normal mirrored catalog<br/>four source tables"]
-  LH["Validation Lakehouse<br/>direct compatibility shortcuts"]
-  SQL["Fabric SQL<br/>both paths readable"]
-  SP["Fabric Spark<br/>compatibility readable;<br/>normal coordinator error"]
+  NM["Normal mirrored catalog<br/>inspect resolved targets + MV discovery"]
+  LH["Validation Lakehouse<br/>mirror + direct output shortcuts"]
+  SQL["Fabric SQL<br/>optional read verification"]
+  SP["Fabric Spark<br/>optional read verification"]
   GEN --> NC
-  GEN --> CC
   NC --> NS
-  CC --> CS
-  CC -->|"Compatibility Mode"| OUT
+  NC -->|"Compatibility Mode"| OUT
   NS --> NM
   NM --> SQL
   NM -->|"mirror-based shortcuts"| LH
@@ -60,10 +52,52 @@ flowchart LR
   LH --> SP
 ```
 
-The normal MV is selected in the mirror definition but was not exposed. The
-diagram's normal SQL result covers the four tables, not that MV.
+The native MV is selected in the mirror definition. Create its mirror-based
+shortcut only when actually discovered; record any discovery gap explicitly.
 
-## Validated deployment
+## Current MCAP migration observation
+
+On 2026-11-15 the four normal managed table IDs and data were preserved.
+Compatibility Mode now generates five new ADLS outputs from those tables and
+the same native MV. The MV was replaced with compatibility properties at
+creation, retaining its public UC ID. All five output logs report reader 1,
+writer 7 and no `catalogManaged`; the four table clone IDs and source/refreshed
+versions match (version 2). MV backing metadata was not inspected or verified.
+
+After an explicit metadata refresh, the mirror exposes all five objects:
+the four tables still resolve to their OneLake sources; the native MV resolves
+to its new ADLS output. Five missing mirror-based Lakehouse shortcuts were
+restored, and five known direct-output shortcuts repointed. The existing direct
+MV shortcut keeps its name `compat_salesagg` and its connection. Both optional
+validation notebooks were updated and their bindings verified, but not run.
+No new Fabric SQL/Spark, append, data-equality or propagation result is claimed.
+
+**Cleanup is complete.** Canary schema/residual demo-MV entries and canary
+notebook were removed after ownership/dependency checks. Compatibility Storage,
+canary mirror and old pipelines were already absent. The initially unlisted
+compatibility-schema residual was identified by exact name with the
+[Databricks Unity Catalog Table API](https://docs.databricks.com/api/uc-tables/v1/delete-table);
+its immutable ID matched the retired demo MV entry and its owner matched the
+current principal. With no downstream views or recent lineage consumers found,
+that single entry was deleted, followed by `DROP SCHEMA ... RESTRICT`.
+No schema force/cascade or privilege changes were needed.
+
+The obsolete OneLake external location initially refused deletion because of
+11 retained managed-table references, despite zero dependent schemas and no
+live table metadata using the retired Storage path. The supported
+[external-location API force option](https://docs.databricks.com/api/uc-external-locations/v1/delete-external-location)
+removed only its metadata after verifying its exact ID, owner and already-absent
+Storage target. UC can no longer purge retained managed data under that retired
+location; no files were deleted. The required ADLS external location and shared
+credential remain. All five output IDs/protocols, ten shortcut targets/connections
+and normal public UC IDs were rechecked after cleanup; all seven historical
+ADLS output directories remain present. Shared infrastructure, identities,
+credentials, connections, roles and normal source data are preserved.
+The earlier failed attempts remain recorded as historical evidence in the
+manifest. The user-authorized resumed F8 capacity remains active and can incur
+charges.
+
+## Historical validated deployment (before single-source migration)
 
 On 2026-11-15, Fabric SQL queried all four normal mirrored tables and all five
 compatibility shortcuts. Counts were 365 dates, 20 products, 100 customers,
@@ -122,11 +156,11 @@ The output directory must not already exist. It contains four CSVs,
 `SalesAggregate.csv` and `reference.json`. They are local expected values,
 not observed results. To validate a private config's ID-based proposed paths
 without connecting, copy the example to `config.local.json`, verify and enter
-the three IDs and set the catalog approval flag; run the same command with
+the workspace and normal Storage IDs, an isolated ADLS output root and the catalog approval flag; run the same command with
 `--check-paths` instead of `--output-dir`. This only validates syntax and
 distinct path construction, not path existence, permissions or eligibility.
-The helper models the original proposed OneLake destinations, not the deployed
-ADLS fallback paths recorded in the manifest.
+The helper models one managed source root and five distinct ADLS destinations.
+It rejects legacy two-producer configurations; a syntax check is not migration approval.
 For a future exported actual MV CSV with the same named columns, compare the
 complete groups independently with
 `python demos\compatibility-mode\compare_aggregate.py --reference demos\compatibility-mode\prepared\SalesAggregate.csv --actual <actual.csv>`.
@@ -134,13 +168,13 @@ It reports missing, extra and differing groups and rejects duplicate keys or
 invalid fields; a match is only a comparison, not proof of mirror mapping.
 
 [`sql/producer-template.sql`](sql/producer-template.sql) is a deliberately
-non-executable template with unresolved placeholders for both managed producer
-sets, informational keys, four compatibility table destinations, and both
+non-executable template with unresolved placeholders for one managed producer
+schema, informational keys, four compatibility table destinations, and one
 native MV definitions. The constraint block follows independent key validation;
 the compatibility definitions require separately verified, unused destinations.
 It is not a deployment script and must not be executed over existing resources.
 Offline tests compare the schemas to the shared generator and
-evaluate both MV SELECTs in SQLite against the complete baseline, using integer
+evaluate the MV SELECT in SQLite against the complete baseline, using integer
 cents for exact arithmetic. This does not validate Databricks SQL syntax,
 feature support, creation, refresh, or cloud behavior.
 [`sql/verify-aggregate-template.sql`](sql/verify-aggregate-template.sql)
@@ -149,6 +183,32 @@ validate its engine syntax for the engine being used.
 [`evidence-template.md`](evidence-template.md) provides the per-object,
 per-engine observation and exact-comparison checklist. The classifier in
 `prepare.py` is a local helper, not a live check.
+
+## Existing-demo migration and safe resume
+
+Preserve the four normal source table IDs and data. Inventory actual workspace,
+Storage, schemas, tables, volumes, mirror definitions, notebooks and shortcut
+targets before any write; a capacity-related 404 is not resource absence.
+Use five new, existing empty ADLS directories beneath the approved external
+location, after checking privileges and seven-day ancestor/descendant history.
+Never reuse or erase the old generated outputs. Managed tables can be altered;
+the native MV needs compatibility properties at creation. Replace the known
+demo-owned MV only when necessary and after dependency/ownership checks.
+
+Refresh and inspect generated output metadata before repointing known
+demo-owned direct shortcuts. Restore missing mirror-based shortcuts only from
+actual discovery, not guessed paths. Stop on target collisions. Remove verified
+obsolete demo schemas, compatibility Storage and canary items only afterward;
+already-absent resources need no recreation. Keep shared credentials, identities,
+connections, roles, accounts and catalogs. The deployer does not automate cleanup.
+
+Keep the private state for resume: matching completed writes are not replayed.
+Missing recorded shortcuts can be recreated only from their unchanged saved
+target; changed targets or UC identities block. Legacy two-producer states stop
+before cloud writes with migration guidance, rather than silently reloading or
+overwriting. Setup verification is the default; SQL/Spark/append/propagation
+checks require separate confirmation and compute-cost warning. MV backing
+metadata verification is excluded.
 
 ## Historical feasibility investigation
 

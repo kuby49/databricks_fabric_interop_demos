@@ -13,7 +13,7 @@ from demos.common.star_schema import (
 )
 from .config import DEMOS
 from .safety import DeploymentError, Waiting, digest, guid, url
-from .services import ADLS, Azure, Databricks, Fabric, HTTP, azure_cli
+from .services import ADLS, Azure, Databricks, Fabric, HTTP, azure_cli, notebook_content
 from .sql import (
     MV, TABLES, aggregate_select, compatibility_properties, create_mv, create_table,
     ident, inserts, literal, qualified,
@@ -125,10 +125,12 @@ class Workflow:
                     else:
                         self.console.output(f"{kind}: recorded operation; resume only, not a new creation.")
             self.console.output("Required writes: workspace/items, isolated UC schema/tables/keys and deterministic initial data.")
-            if demo != "power-bi":
+            if demo == "federation":
+                self.console.output("Required writes: dedicated Lakehouse and bound producer notebooks; Fabric baseline loading; workspace-specific OneLake connection and independent read-only FOREIGN CATALOG. No UC managed tables, mirror or external location.")
+            elif demo != "power-bi":
                 self.console.output("OneLake external-location/identity and mirror-connection manual checkpoints will follow item creation.")
             if demo == "compatibility":
-                self.console.output("Two catalog-commit producer sets, two native MVs, SYNC UNIFORM output refreshes, five real ADLS output shortcuts and a bound notebook.")
+                self.console.output("One normal catalog-commit producer schema, four tables, one native MV, five ADLS compatibility outputs, mirror-based and direct output shortcuts, and a bound notebook. No canary provisioning.")
             if demo == "power-bi":
                 self.console.output("Native Catalog Explorer publication, consent and report creation remain manual (no connector substitution).")
         self.console.output(
@@ -176,13 +178,22 @@ class Workflow:
             "In Azure/Fabric capacity administration, verify this immutable Fabric capacity GUID belongs to the exact ARM resource and tenant.",
             "Verify matching regions, F SKU availability/quotas, license, capacity-assignment permission and tenant policies. What-If is not a quota or license guarantee.",
         ], "https://learn.microsoft.com/en-us/fabric/admin/capacity-settings")
-        self.gate(demo + "/uc", {"workspace_id": resolved["databricks"]["workspace_id"], "catalog": spec["catalog"]}, [
+        uc_instructions = [
             "For a new workspace, have an account/metastore administrator attach a Unity Catalog metastore and create or explicitly approve the named parent catalog with suitable managed storage.",
             f"Configure Databricks unified-auth profile {spec['profile']} for {resolved['databricks']['host']}. Verify UC, serverless SQL availability and USE CATALOG/CREATE SCHEMA; do not change other workloads.",
             "For OneLake, enable its workspace preview and use serverless or DBR 18.1+. For native MVs verify the required serverless entitlement. Obtain approval separately for any shared policy or permission change.",
-        ], UC_DOC)
+        ]
+        if demo == "federation":
+            uc_instructions = [
+                "Verify this workspace is attached to the intended metastore; CREATE CONNECTION/CREATE STORAGE CREDENTIAL and CREATE CATALOG must be approved at metastore scope.",
+                "The named foreign catalog is a new top-level object, not a schema inside any existing catalog. Verify CREATE FOREIGN CATALOG on the chosen connection.",
+                "Verify network access to OneLake and SQL warehouse version 2025.40+. Spark E2E requires DBR 18.0+ standard access mode and separate compute-cost confirmation.",
+                f"Configure profile {spec['profile']} for the exact Databricks host. Do not modify shared metastore/tenant settings.",
+            ]
+        self.gate(demo + "/uc", {"workspace_id": resolved["databricks"]["workspace_id"], "catalog": spec["catalog"]}, uc_instructions, UC_DOC)
         db = self.db_factory(resolved["databricks"]["host"], spec["profile"])
-        db.get("catalogs", spec["catalog"])
+        if demo != "federation":
+            db.get("catalogs", spec["catalog"])
         warehouse = spec["warehouse"]
         if warehouse["mode"] == "reuse":
             warehouse_id = warehouse["id"]
@@ -237,11 +248,15 @@ class Workflow:
         self.fabric.reconcile(f"/workspaces/{workspace}/items/{result['id']}", result,
                               {"displayName": display_name, "type": item_type, "description": self.marker})
         if definition:
-            actual = self.fabric.definition(workspace, result["id"])
+            actual = self.fabric.definition(workspace, result["id"], definition.get("format"))
             expected_parts = {p["path"]: json.loads(base64.b64decode(p["payload"])) for p in definition["parts"]}
-            actual_parts = {p["path"]: json.loads(base64.b64decode(p["payload"])) for p in actual["parts"]}
+            actual_parts = {p["path"]: json.loads(base64.b64decode(p["payload"]))
+                            for p in actual["parts"] if p["path"] in expected_parts}
             for part, expected in expected_parts.items():
-                if actual_parts.get(part) != expected:
+                live = actual_parts.get(part)
+                matches = (live is not None and notebook_content(live) == notebook_content(expected)
+                           if item_type == "Notebook" else live == expected)
+                if not matches:
                     raise DeploymentError("Fabric definition differs from the approved deployment payload.")
         return result["id"]
 
@@ -404,10 +419,9 @@ class Workflow:
                 "publishing_origin": "operator-attested native Catalog Explorer", "relationships": "observed manually; not asserted"}
 
     def compatibility(self, demo, spec, workspace, db, warehouse):
+        self.check_compatibility_state(demo, spec)
         normal_root = self.onelake_location(demo, "normal", spec, workspace, db)
-        compat_root = self.onelake_location(demo, "compat", spec, workspace, db)
         normal = self.producer(demo, "normal", spec, db, warehouse, normal_root, True)
-        compat = self.producer(demo, "compat", spec, db, warehouse, compat_root, True)
         output_root = spec["output_root"].rstrip("/") + "/" + self.state.data["deployment_id"]
         outputs = {n: output_root + "/" + n.lower() for n in (*TABLES, MV)}
         adls = self.adls_factory(spec["output_root"])
@@ -423,31 +437,29 @@ class Workflow:
             key = demo + "/enable/" + table
             if key not in self.state.data["steps"]:
                 adls.empty(outputs[table])
-            statement = (f"ALTER TABLE {qualified(spec['catalog'], compat, table)} SET TBLPROPERTIES ("
+            statement = (f"ALTER TABLE {qualified(spec['catalog'], normal, table)} SET TBLPROPERTIES ("
                          + compatibility_properties(outputs[table]) + ")")
-            self.sql_write(key, db, warehouse, statement)
-        for schema in (normal, compat):
-            output = outputs[MV] if schema == compat else None
-            key = demo + "/" + schema + "/mv"
-            if output and key not in self.state.data["steps"]:
-                adls.empty(output)
-            self.uc_create(key, db, warehouse, "tables", spec["catalog"] + "." + schema + "." + MV,
-                           create_mv(spec["catalog"], schema, self.marker, output),
-                           compat_root if schema == compat else normal_root)
-            self.sql_write(key + "/refresh", db, warehouse,
-                           f"REFRESH MATERIALIZED VIEW {qualified(spec['catalog'], schema, MV)}")
+            self.sql_write(key, db, warehouse, statement,
+                           lambda: self.check_generated_paths(db, spec["catalog"], normal, {table: outputs[table]}))
+        key = demo + "/" + normal + "/mv"
+        if key not in self.state.data["steps"]:
+            adls.empty(outputs[MV])
+        self.uc_create(key, db, warehouse, "tables", spec["catalog"] + "." + normal + "." + MV,
+                       create_mv(spec["catalog"], normal, self.marker, outputs[MV]), normal_root)
+        self.sql_write(key + "/refresh", db, warehouse,
+                       f"REFRESH MATERIALIZED VIEW {qualified(spec['catalog'], normal, MV)}")
         for table in (*TABLES, MV):
             kind = "MATERIALIZED VIEW" if table == MV else "TABLE"
             self.sql_write(demo + "/uniform-refresh/" + table, db, warehouse,
-                           f"REFRESH {kind} {qualified(spec['catalog'], compat, table)} SYNC UNIFORM")
-        self.gate(demo + "/output-freshness", {"paths": outputs, "schema": spec["catalog"] + "." + compat}, [
+                           f"REFRESH {kind} {qualified(spec['catalog'], normal, table)} SYNC UNIFORM")
+        self.gate(demo + "/output-freshness", {"paths": outputs, "schema": spec["catalog"] + "." + normal}, [
             "For the four managed tables, inspect DESCRIBE HISTORY and Uniform Compatibility Information. Compare latest source and last-refreshed versions/timestamps; compare output clone source IDs to the table IDs.",
             "Inspect the actual generated output Delta histories/logs in ADLS for all five paths. Verify output generation, IDs, reader/writer protocol, feature lists and absence of catalogManaged; NEVER write to these paths.",
             "MV backing location, identity, version and protocol verification are excluded from this demo. Do not request or infer that evidence, or claim MV backing provenance/freshness was verified.",
             "If output generation/freshness is still pending, answer no and resume later. Initial generation can take an hour; the script does not extend a measured propagation deadline or regenerate/reload on resume.",
-        ], COMPAT_DOC, lambda: self.check_generated_paths(db, spec["catalog"], compat, outputs))
+        ], COMPAT_DOC, lambda: self.check_generated_paths(db, spec["catalog"], normal, outputs))
         output_protocols = {table: adls.protocol(path) for table, path in outputs.items()}
-        freshness = {table: self.freshness(demo, db, warehouse, spec["catalog"], compat, table)
+        freshness = {table: self.freshness(demo, db, warehouse, spec["catalog"], normal, table)
                      for table in (*TABLES, MV)}
         previous = self.state.data["results"].get(demo, {}).get("output_protocols", {})
         for table, protocol in output_protocols.items():
@@ -458,7 +470,7 @@ class Workflow:
             if table == MV:
                 provenance[table] = {"comparison": "not checked (MV backing metadata excluded)"}
                 continue
-            source = db.get("tables", spec["catalog"] + "." + compat + "." + table)
+            source = db.get("tables", spec["catalog"] + "." + normal + "." + table)
             source_id = source["table_id"]
             observed_clone_id = self.input(demo + "/clone-source/" + table,
                                            f"Observed generated {table} clone source GUID from its Delta log")
@@ -479,20 +491,20 @@ class Workflow:
             self.shortcut(demo + "/shortcut/compat/" + table, workspace, lakehouse, body)
         self.gate(demo + "/normal-discovery", {"mirror": mirror, "schema": normal, "tables": list(TABLES)}, [
             "Open the normal mirror and inspect its actual discovered objects and shortcut paths. Wait for the four baseline tables; record normal MV discovery separately.",
-            "The mirror intentionally selects the native normal MV too. If it is not exposed, record that discovery gap; do not route it to a compatibility output or invent a successful negative control.",
+            "The mirror selects the native MV too. Record any discovery gap. Compatibility Mode may redirect discovered targets to ADLS outputs; inspect actual resolved targets instead of asserting a compatibility-off negative control.",
             "Supply the actual mirror Tables/<schema> folder path at the next prompt. Normal shortcut creation needs real discovered paths, not guessed source locations.",
         ], MIRROR_DOC)
         folder = self.input(demo + "/normal-folder", "Actual normal mirror folder (Tables/<schema>)", self.mirror_folder)
         shortcuts = self.fabric.http.list(f"/workspaces/{workspace}/items/{mirror}/shortcuts")
         for table in TABLES:
-            found = [s for s in shortcuts if s.get("path") == folder and s.get("name", "").lower() == table.lower()]
+            found = [s for s in shortcuts if s.get("path", "").lstrip("/") == folder and s.get("name", "").lower() == table.lower()]
             if len(found) != 1:
                 raise Waiting("Normal table shortcut is not discoverable at the attested folder. No fabricated shortcut was created.")
             body = {"path": "Tables", "name": "normal_" + table.lower(),
                     "target": {"oneLake": {"workspaceId": workspace, "itemId": mirror,
                                           "path": folder + "/" + found[0]["name"]}}}
             self.shortcut(demo + "/shortcut/normal/" + table, workspace, lakehouse, body)
-        mv_shortcuts = [s for s in shortcuts if s.get("path") == folder and s.get("name", "").lower() == MV]
+        mv_shortcuts = [s for s in shortcuts if s.get("path", "").lstrip("/") == folder and s.get("name", "").lower() == MV]
         normal_mv = len(mv_shortcuts) == 1
         if normal_mv:
             body = {"path": "Tables", "name": "normal_" + MV,
@@ -500,14 +512,26 @@ class Workflow:
             self.shortcut(demo + "/shortcut/normal/" + MV, workspace, lakehouse, body)
         notebook = self.item(demo + "/notebook", workspace, "notebooks", "Notebook", spec["prefix"] + "_inspect",
                              notebook_definition(workspace, lakehouse, lakehouse_name))
-        return {"workspace": workspace, "schemas": [normal, compat], "mirror": mirror, "lakehouse": lakehouse,
+        return {"workspace": workspace, "schemas": [normal], "mirror": mirror, "lakehouse": lakehouse,
                 "notebook": notebook, "normal_mv_discovered": normal_mv, "outputs": outputs,
+                "mirror_resolved_targets": {s["name"]: s.get("target") for s in shortcuts
+                                            if s.get("path", "").lstrip("/") == folder},
                 "output_protocols": output_protocols,
                 "output_provenance": provenance,
                 "freshness_observations": freshness,
                 "output_freshness": "table versions checked; MV backing freshness/provenance not checked",
                 "mv_backing_metadata": "not checked (excluded from demo setup)",
                 "mv_backing_protocol": "not checked (excluded from demo setup)"}
+
+    def check_compatibility_state(self, demo, spec):
+        steps = self.state.data["steps"]
+        old_mv = steps.get(demo + "/" + spec["prefix"] + "_normal/mv", {})
+        # Completed old producer writes cannot be reinterpreted as single-source work.
+        if (any(k.startswith(demo + "/compat/") for k in steps)
+                or len(self.state.data["results"].get(demo, {}).get("schemas", [])) > 1
+                or old_mv and self.state.data["inputs"].get(demo + "/single-source-version") != 1):
+            raise DeploymentError("Legacy two-producer compatibility state. Preserve it; inventory immutable IDs and use an explicitly approved migration. Do not start fresh, replay loads or overwrite resources.")
+        self.state.data["inputs"][demo + "/single-source-version"] = 1
 
     @staticmethod
     def mirror_folder(value):
@@ -526,7 +550,9 @@ class Workflow:
     def check_generated_paths(self, db, catalog, schema, outputs):
         for table, expected in outputs.items():
             remote = db.get("tables", catalog + "." + schema + "." + table)
-            if remote.get("properties", {}).get("delta.universalFormat.compatibility.location", "").rstrip("/") != expected:
+            properties = remote.get("properties", {})
+            if (properties.get("delta.universalFormat.enabledFormats") != "compatibility"
+                    or properties.get("delta.universalFormat.compatibility.location", "").rstrip("/") != expected):
                 raise Waiting("UC compatibility destination does not match the selected actual output path. Inspect generation; no shortcut was created.")
             if table == MV:
                 exposed = db.get("tables", catalog + "." + schema + "." + table, compatibility=True)
@@ -578,10 +604,15 @@ class Workflow:
         return version
 
     def shortcut(self, key, workspace, lakehouse, body):
+        def reconcile(handle):
+            if not self.fabric.get(handle["path"], missing=True):
+                self.fabric.shortcut(workspace, lakehouse, body)
+            return self.fabric.check_shortcut(handle, body)
+
         return self.state.step(key, body,
                                lambda: self.fabric.shortcut(workspace, lakehouse, body),
                                lambda handle: self.fabric.check_shortcut(handle, body),
-                               lambda handle: self.fabric.check_shortcut(handle, body))
+                               reconcile)
 
     def run_demo(self, demo):
         spec = self.config["demos"][demo]
@@ -589,6 +620,9 @@ class Workflow:
         workspace = self.workspace(demo, spec, capacity)
         if demo == "power-bi":
             result = self.native_powerbi(demo, spec, workspace, db, warehouse)
+        elif demo == "federation":
+            from .federation import deploy
+            result = deploy(self, spec, workspace, db, warehouse)
         elif demo == "onelake":
             managed = self.onelake_location(demo, "onelake", spec, workspace, db)
             schema = self.producer(demo, "onelake", spec, db, warehouse, managed)
@@ -604,6 +638,10 @@ class Workflow:
         self.console.output("OPTIONAL END-TO-END COST WARNING: SQL scans, Spark, Power BI/report tests and any append/refresh can incur extra charges.")
         if not self.console.confirm(f"Run optional end-to-end checks for {demo} now?"):
             result["optional_checks"] = "not run; no affirmative consent"
+            return
+        if demo == "federation":
+            from .federation import optional_checks
+            optional_checks(self, result, db, warehouse)
             return
         schema = result.get("schema") or result["schemas"][0]
         fact = qualified(self.config["demos"][demo]["catalog"], schema, "FactSales")
@@ -622,6 +660,8 @@ class Workflow:
         result["optional_checks"]["reader_evidence"] = "operator-attested; inspect private evidence for individual outcomes"
 
     def run(self, optional=False):
+        if "compatibility" in self.config["demos"]:
+            self.check_compatibility_state("compatibility", self.config["demos"]["compatibility"])
         self.preview()
         self.gate("preflight-policy", {"tenant": self.config["tenant_id"], "subscription": self.config["subscription_id"]}, [
             "Review the What-If output and exact proposed scope. Verify regional feature/SKU availability, quotas, policy/network requirements and Azure/Fabric/UC permissions with administrators; unreadable prerequisites are blockers, not passes.",

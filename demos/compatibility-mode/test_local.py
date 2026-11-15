@@ -82,7 +82,7 @@ class CompatibilityLocalTests(unittest.TestCase):
                 )
 
         alterations = re.findall(
-            r"ALTER TABLE \{\{catalog\}\}\.\{\{compat_schema\}\}\.(\w+)"
+            r"ALTER TABLE \{\{catalog\}\}\.\{\{schema\}\}\.(\w+)"
             r" SET TBLPROPERTIES \((.*?)\);", sql, re.S,
         )
         self.assertEqual({name for name, _ in alterations}, set(TABLE_COLUMN_TYPES))
@@ -93,17 +93,16 @@ class CompatibilityLocalTests(unittest.TestCase):
         self.assertEqual(len(destinations), 4)
         self.assertEqual(len(set(destinations)), 4)
 
-    def test_both_mv_queries_match_complete_baseline_reference(self):
+    def test_single_mv_query_matches_complete_baseline_reference(self):
         sql = (DEMO / "sql" / "producer-template.sql").read_text(encoding="utf-8")
         definitions = re.findall(
             r"CREATE MATERIALIZED VIEW .*?TBLPROPERTIES\s*\((.*?)\)\s*AS\s+(SELECT.*?);",
             sql, re.S,
         )
-        self.assertEqual(len(definitions), 2)
-        self.assertNotIn("enabledFormats", definitions[0][0])
-        self.assertIn("'delta.feature.catalogManaged' = 'supported'", definitions[1][0])
-        self.assertIn("'delta.universalFormat.enabledFormats' = 'compatibility'", definitions[1][0])
-        self.assertIn("{{unique_empty_mv_destination}}", definitions[1][0])
+        self.assertEqual(len(definitions), 1)
+        self.assertIn("'delta.feature.catalogManaged' = 'supported'", definitions[0][0])
+        self.assertIn("'delta.universalFormat.enabledFormats' = 'compatibility'", definitions[0][0])
+        self.assertIn("{{unique_empty_mv_destination}}", definitions[0][0])
 
         data = generate_star_schema()
         reference = TOOLS["aggregate"](data)
@@ -130,7 +129,7 @@ class CompatibilityLocalTests(unittest.TestCase):
                     [tuple(sqlite_value(row[column]) for column in names) for row in data[name]],
                 )
             for _, query in definitions:
-                query = re.sub(r"\{\{catalog\}\}\.\{\{(?:normal|compat)_schema\}\}\.", "", query)
+                query = re.sub(r"\{\{catalog\}\}\.\{\{schema\}\}\.", "", query)
                 cursor = connection.execute(query)
                 self.assertEqual([column[0] for column in cursor.description], columns)
                 self.assertEqual(sorted(cursor.fetchall()), expected)
@@ -152,7 +151,7 @@ class CompatibilityLocalTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 TOOLS["prepare"](self.config, output)
 
-    def test_paths_require_approval_ids_and_disjoint_items(self):
+    def test_paths_require_approval_ids_and_adls_outputs(self):
         with self.assertRaisesRegex(ValueError, "approved"):
             TOOLS["paths"](self.config)
         self.config["databricks"]["parent_catalog_approved"] = True
@@ -161,21 +160,21 @@ class CompatibilityLocalTests(unittest.TestCase):
         self.config["fabric"].update(
             workspace_id="00000000-0000-0000-0000-000000000001",
             normal_storage_id="00000000-0000-0000-0000-000000000002",
-            compat_storage_id="00000000-0000-0000-0000-000000000002",
         )
-        with self.assertRaisesRegex(ValueError, "must differ"):
-            TOOLS["paths"](self.config)
-        self.config["fabric"]["compat_storage_id"] = "00000000-0000-0000-0000-000000000003"
         result = TOOLS["paths"](self.config)
         destinations = result["compatibility_destinations"]
         self.assertEqual(len(set(destinations.values())), 5)
-        self.assertTrue(all("/Files/compatibility/" in item for item in destinations.values()))
-        self.assertTrue(result["compat_managed"].endswith("/Files/managed"))
+        self.assertTrue(all(".dfs.core.windows.net/compatibility/" in item for item in destinations.values()))
+        self.assertTrue(result["normal_managed"].endswith("/Files/managed"))
+        self.config["fabric"]["compat_storage_id"] = "00000000-0000-0000-0000-000000000003"
+        with self.assertRaisesRegex(ValueError, "legacy"):
+            TOOLS["paths"](self.config)
 
     def test_result_classification_does_not_invent_negative_controls(self):
         classify = TOOLS["classify"]
         evidence = dict(ready=True, authorized=True, selection_verified=True,
-                        source_catalog_managed=True, compatibility_off=True)
+                        source_catalog_managed=True, resolved_target_verified=True,
+                        resolved_target_catalog_managed=True)
         self.assertEqual(classify("normal", "spark", "feature_exclusion", evidence),
                          "EXPECTED_LIMITATION_OBSERVED")
         for result in ("permission", "timeout", "absent", "other"):
