@@ -72,15 +72,30 @@ MV shortcut keeps its name `compat_salesagg` and its connection. Both optional
 validation notebooks were updated and their bindings verified, but not run.
 No new Fabric SQL/Spark, append, data-equality or propagation result is claimed.
 
-Canary schema/residual demo-MV entries and canary notebook were removed after
-ownership/dependency checks. Compatibility Storage, canary mirror and old
-pipelines were already absent. **Cleanup remains blocked** for the obsolete
-compatibility schema: `DROP SCHEMA ... RESTRICT` reports one residual table
-that table APIs and `information_schema` no longer identify. No force/cascade
-was used on that uninspectable schema; its dependent obsolete OneLake external
-location is retained pending administrator recovery. Old ADLS outputs and
-shared infrastructure/identities/credentials/connections/roles are preserved.
-The user-authorized resumed F8 capacity remains active and can incur charges.
+**Cleanup is complete.** Canary schema/residual demo-MV entries and canary
+notebook were removed after ownership/dependency checks. Compatibility Storage,
+canary mirror and old pipelines were already absent. The initially unlisted
+compatibility-schema residual was identified by exact name with the
+[Databricks Unity Catalog Table API](https://docs.databricks.com/api/uc-tables/v1/delete-table);
+its immutable ID matched the retired demo MV entry and its owner matched the
+current principal. With no downstream views or recent lineage consumers found,
+that single entry was deleted, followed by `DROP SCHEMA ... RESTRICT`.
+No schema force/cascade or privilege changes were needed.
+
+The obsolete OneLake external location initially refused deletion because of
+11 retained managed-table references, despite zero dependent schemas and no
+live table metadata using the retired Storage path. The supported
+[external-location API force option](https://docs.databricks.com/api/uc-external-locations/v1/delete-external-location)
+removed only its metadata after verifying its exact ID, owner and already-absent
+Storage target. UC can no longer purge retained managed data under that retired
+location; no files were deleted. The required ADLS external location and shared
+credential remain. All five output IDs/protocols, ten shortcut targets/connections
+and normal public UC IDs were rechecked after cleanup; all seven historical
+ADLS output directories remain present. Shared infrastructure, identities,
+credentials, connections, roles and normal source data are preserved.
+The earlier failed attempts remain recorded as historical evidence in the
+manifest. The user-authorized resumed F8 capacity remains active and can incur
+charges.
 
 ## Historical validated deployment (before single-source migration)
 

@@ -1,11 +1,12 @@
 {
   "demo": "compatibility-mode",
   "architecture": "single normal UC schema; four tables and one native MV; five generated ADLS outputs",
-  "status": "single_source_setup_verified_with_obsolete_schema_cleanup_blocked",
+  "status": "single_source_setup_and_cleanup_verified",
   "verification_scope": "resource_setup_only",
   "mv_backing_metadata": "excluded; not verified",
   "migration": {
-    "observed_utc": "2026-11-15T20:21:19.415716+00:00",
+    "observed_utc": "2026-11-15T21:27:20.183268+00:00",
+    "initial_setup_observed_utc": "2026-11-15T20:21:19.415716+00:00",
     "tenant_id": "4526cee1-4399-4e4b-9134-46fabd583527",
     "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
     "workspace_name": "fabricinterop_compatibility",
@@ -88,7 +89,7 @@
       "table_features": ["appendOnly", "clustering", "domainMetadata", "inCommitTimestamp", "invariants", "redirectWriterOnly-preview", "rowTracking"],
       "mv_output_features": ["appendOnly", "changeDataFeed", "domainMetadata", "inCommitTimestamp", "invariants", "redirectWriterOnly-preview", "rowTracking"],
       "table_output_log_versions": 0,
-      "mv_output_log_version": 2
+      "mv_output_log_version": 4
     },
     "mirror": {
       "id": "9cd08f89-7f99-4666-9d5b-193d4f836018",
@@ -135,13 +136,52 @@
       "compatibility_schema": {
         "name": "dbxfabricinterop.fabricinterop_cc_compat",
         "id": "d9b88e45-2087-42d9-903a-c85e67fb2225",
-        "status": "blocked; preserved",
-        "error_class": "INVALID_PARAMETER_VALUE.SCHEMA_NOT_EMPTY",
-        "error": "Schema has one residual table, zero functions and zero volumes; table API and information_schema expose no identifiable current entry",
-        "failed_restrict_statement_ids": ["01f1e130-ea35-1fe6-a8c4-4f6668e5c7c3", "01f1e131-b50b-1b4f-84e1-989844fa79c1"],
-        "safe_action": "No force/cascade on an uninspectable resource; administrator recovery required"
+        "status": "removed; verified absent",
+        "residual_full_name": "dbxfabricinterop.fabricinterop_cc_compat.__materialization_mat_cccce4b6_3b5f_4e3d_b9fb_6c36774b0d23_sales_by_day_product_region_segment_1",
+        "residual_catalog_entry_id": "248c0ae8-aa6a-4eb8-a736-92e7bf12a5e3",
+        "scope_checks": "Exact immutable ID matches retired demo MV entry; schema and entry owners match current principal; old pipeline absent; no other live tables/functions/volumes; no downstream views or recent lineage consumers",
+        "authority": "Verified schema/table ownership; no privilege changes",
+        "residual_operation": "Databricks Unity Catalog DELETE /api/2.1/unity-catalog/tables/{full_name}; HTTP 200; absence verified",
+        "schema_operation": "DROP SCHEMA dbxfabricinterop.fabricinterop_cc_compat RESTRICT",
+        "schema_statement_id": "01f1e139-921b-1230-a366-f39ccbb8fba5",
+        "schema_force_or_cascade_used": false,
+        "active_mv_backing_metadata_verification": "excluded; retired entry identified only for cleanup",
+        "historical_initial_blocker": {
+          "error_class": "INVALID_PARAMETER_VALUE.SCHEMA_NOT_EMPTY",
+          "error": "RESTRICT reported one residual table; list APIs and information_schema did not expose it",
+          "failed_restrict_statement_ids": ["01f1e130-ea35-1fe6-a8c4-4f6668e5c7c3", "01f1e131-b50b-1b4f-84e1-989844fa79c1"],
+          "initial_safe_action": "Preserved schema/location pending exact residual identity and ownership checks"
+        }
       },
-      "compatibility_onelake_external_location": "fabricinterop_cc_compat preserved because obsolete schema still depends on it; shared fabricinterop_onelake_cred unchanged"
+      "compatibility_onelake_external_location": {
+        "name": "fabricinterop_cc_compat",
+        "id": "7e72cb28-abc6-4390-98cb-6231587cf939",
+        "url": "abfss://200976aa-ae68-45b0-a575-1e16e8bfcc1f@onelake.dfs.fabric.microsoft.com/087dd564-3d1f-4341-99a7-c489185b9cab/Files",
+        "status": "removed; verified absent",
+        "scope_checks": "Exact ID, owner and retired Storage URL verified; Storage absent; zero dependent schemas and no live table metadata references; no external-table/volume/share/model dependencies reported",
+        "retained_managed_table_references": 11,
+        "operation": "Supported Databricks Unity Catalog external-location DELETE with force=true; HTTP 200",
+        "force_effect": "Location metadata removed; retained managed data can no longer be purged by UC",
+        "physical_file_deletion": false,
+        "shared_credential": "fabricinterop_onelake_cred preserved",
+        "required_adls_location": "fabricinterop_cc_compat_adls preserved",
+        "historical_restrict_failure": {
+          "statement_id": "01f1e139-b70b-1dc3-b86a-f27a5b1e00fa",
+          "error_class": "INVALID_PARAMETER_VALUE.UC_EXTERNAL_LOCATION_OP_NOT_ALLOWED",
+          "reason": "11 retained managed-table references; zero dependent schemas or other resource types; server documents force option and loss of future managed-data purge"
+        }
+      },
+      "post_cleanup_verification": {
+        "observed_utc": "2026-11-15T21:27:20.183268+00:00",
+        "normal_table_and_native_mv_public_ids_unchanged": true,
+        "output_ids_and_protocols_verified": 5,
+        "shortcut_targets_and_connections_verified": 10,
+        "mirror_resolved_targets_unchanged": true,
+        "temporary_volumes": 0,
+        "old_output_directories_present": ["dimdate-200976aa", "dimproduct-7ce921b4", "dimcustomer-7ce921b4", "factsales-7ce921b4", "salesagg-7ce921b4", "canary-200976aa", "canary-mv-a62f1dcb"],
+        "remaining_cleanup_blockers": [],
+        "scope": "resource setup only; no SQL/Spark data reads, append or propagation checks"
+      }
     },
     "end_to_end_sql_spark_append_propagation": "not run; separate confirmation and compute-cost warning required",
     "offline_tests": "52 repository tests plus 8 demo-local tests; simulated services, not live query certification"
