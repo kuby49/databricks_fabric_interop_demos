@@ -1,5 +1,16 @@
 # Databricks Publish to Power BI
 
+For a fresh independent deployment, use the [guided Python CLI](../deployment/README.md):
+`python -m demos.deploy --demo power-bi --action configure`, then separately
+approved preview/apply. It provisions the selected foundation and independent
+star schema with informational keys, and pauses at native **Catalog Explorer
+Publish to Power BI**, home-tenant sign-in/consent/XMLA and report-creation
+checkpoints with official links. It never substitutes a manually connected model.
+Initial loading is cost-bearing deployment work; default checks verify model/
+report IDs and binding, not relationship or filter success. Optional data/report/
+source-change evidence is separately confirmed. Retain private config/state for
+safe resume; historical evidence below is not live validation of the new CLI.
+
 **Status: the approved source append and DirectQuery visibility checks passed within the 900-second window; one combined report-slicer interaction was not captured, so this is verified with that limitation.** The dedicated Fabric workspace and shared `fabricadbmirror` capacity were verified; the isolated `dbxfabricinterop.fabricinterop_powerbi` schema contains 365 dates, 20 products, 100 customers, and 10,010 sales lines. The saved report `fabricinterop_powerbi_report` (ID `3dcfdaab-7eca-4415-8bf2-ba55cec3a091`) is bound to the existing model `dbxfabricinterop-fabricinterop_powerbi` (ID `39b32d34-8a65-4d0f-8c3a-5aa37d95a7c1`), whose name differs from the configured expected name `fabricinterop_powerbi_model`. Before edits, all four model partitions were `DirectQuery`/`Ready`; the three fact-to-dimension relationships were active, many-to-one, and one-direction. No relationships, shared permissions, or settings were changed.
 
 The coordinating assistant's signed-in browser canvas observed the pre-append default card as `930.30K`, Category=Accessories as `212.94K`, Category=Accessories plus Region=East as `53.39K`, and Date 2024-12-01 through 2024-12-15 as `40.68K` around 19:12–19:13Z; the report was reset to default. A separate pre-append source query at 19:43Z still returned 10,000 rows and `930299.36`, before the insert at 19:47Z. Exact pre-append model values returned `930299.36`, `212937.91`, `53389.83`, and `40683.30` (422 rows), respectively. The prepared 10-row insert succeeded once at Delta version 21, with commit time `2026-11-14T19:47:09Z`; post-change source and exact model both returned 10,010 rows and `930995.27`. The model query completed within 900 seconds, and the refreshed report card showed `931.00K` (rounded UI evidence only). A separate candidate value `930996.86` is not supported by the exact source/model results; the rounded card cannot distinguish it. The API visual metadata listed only the card, and the combined date/category/region interaction was not captured. Full evidence and resource IDs are in `manifest.json` and `evidence-template.md`.

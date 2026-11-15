@@ -16,9 +16,35 @@ These are not interchangeable paths: the OneLake demo uses shared underlying Del
 
 Demo 1 is deployed: its original baseline deadline failed, a later baseline matched, and the append check passed. Demo 2 is deployed with successful DirectQuery checks and a documented report-slicer evidence gap. Demo 3's compatibility outputs, including its native MV, were read in Fabric SQL and Spark. Normal mirrored tables were readable in SQL but failed in Spark with commit-coordinator errors; the selected normal MV was not exposed by the mirror. See each manifest and runbook for evidence and limitations.
 
-The selected Databricks workspace and Unity Catalog parent catalog are both named `dbxfabricinterop`; use of that catalog is explicitly approved. The example config keeps `parent_catalog_approved` set to `false` as a conservative template default. When preparing a private deployment config, verify the catalog identity and set the flag to `true` to record the existing approval. This does not grant catalog privileges or approve other shared changes, chargeable resources, or deployment. The deployment gate still requires explicit Databricks/Fabric workspace confirmations and per-demo chargeable-resource approvals; the Power BI Fabric and Power BI workspace IDs must match, and its capacity ID must be set. These are operator attestations, not live checks. Never add credentials or secret values to the config.
+The historical selected Databricks workspace and Unity Catalog parent catalog are both named `dbxfabricinterop`; use of that catalog was explicitly approved for the recorded deployment. The example config keeps `parent_catalog_approved` set to `false` as a conservative template default. When preparing a private deployment config, verify the catalog identity and set the flag to `true` to record the existing approval. This does not grant catalog privileges or approve other shared changes, chargeable resources, or deployment. The deployment gate still requires explicit Databricks/Fabric workspace confirmations and per-demo chargeable-resource approvals; the Power BI Fabric and Power BI workspace IDs must match, and its capacity ID must be set. These are operator attestations, not live checks. Never add credentials or secret values to the config.
 
-## Local checks
+## Guided deployment
+
+Use the [cross-platform guided deployer](demos/deployment/README.md) for a fresh,
+independent deployment of one demo or all three:
+
+```text
+python -m pip install -r requirements-deploy.txt
+python -m demos.deploy --demo all --action configure
+python -m demos.deploy --action preview
+python -m demos.deploy --action apply
+```
+
+Configuration is offline. Live preview/deployment needs separate approval and
+sign-in; the CLI never changes your tenant configuration. It prompts for
+create/reuse capacity and Databricks infrastructure, independent workspaces and
+all demo-specific prerequisites. Required initial loading and refreshes can incur
+charges; cloud writes require an explicit preview confirmation. Manual actions
+pause at numbered, linked, resumable checkpoints. Default verification checks
+resource/checkpoint state only; optional data/report checks require separate
+cost consent. Keep the ignored private config/state for safe
+`--action resume`; there is no automatic overwrite, replay or cleanup.
+
+The deployer has offline simulated-service coverage, not live compatibility
+certification. Historical names, approvals and manifests are not portable
+defaults or approval to deploy again.
+
+## Offline preparation checks
 
 From the repository root:
 

@@ -3,3 +3,6 @@ __pycache__/
 demos/config.local.json
 .venv/
 venv/
+.demo-deploy/
+*.deploy.local.json
+*.deploy.state.json

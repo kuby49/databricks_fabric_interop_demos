@@ -1,5 +1,15 @@
 # OneLake interoperability demo
 
+For a new independent deployment, use the [guided Python CLI](../deployment/README.md):
+`python -m demos.deploy --demo onelake --action configure`, followed by separately
+approved preview/apply. It creates/reuses the selected Azure foundation and
+creates isolated Storage/UC/table/mirror resources, pausing with exact OneLake
+identity/SAS/file-events/external-location and connection instructions. Initial
+data loading is deployment work with a cost warning. Default checks are setup
+only; optional reader/append/propagation evidence needs separate consent. Preserve
+the private state for safe resume. The following manifests and results describe
+the historical deployment, not verification of the new deployer.
+
 **Status: deployed; original baseline deadline failed, append check passed.** The dedicated
 workspace, Storage item, identity roles, isolated writable credential, external
 location, and managed schema are recorded in `deployment-manifest.json`. Four
@@ -214,8 +224,9 @@ workspace. The SQL renderer does not execute SQL.
 
 ## Manual deployment sequence
 
-Do not treat these instructions, scripts, or notebooks as deployment output. There is
-no auto-deploy path in this demo.
+Do not treat these legacy instructions, preparation scripts, or notebooks as
+deployment output. The separate guided deployer is the new guarded automation
+path; its administrator-assisted actions remain explicitly manual.
 
 1. Obtain the independent workspaces, storage item, capacity, supported Databricks
    workspace/compute, approved catalog, identity, and settings listed above. If a
