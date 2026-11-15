@@ -14,6 +14,34 @@ The baseline mirror check missed its 900-second deadline and is a policy failure
 not a measured propagation latency. See the manifest for the original commit time,
 deadline, and observed state; do not reset the clock for a later observation.
 
+The deployed resource names and flows are shown below; the editable source is
+[`architecture.mmd`](architecture.mmd).
+
+```mermaid
+flowchart LR
+  GEN["Shared baseline generator"]
+  NOTE["Databricks create + append"]
+  SCHEMA["dbxfabricinterop<br/>fabricinterop_onelake schema"]
+  CRED["fabricinterop_onelake_cred"]
+  LOC["UC OneLake external location"]
+  ITEM["fabricinterop_onelake_storage"]
+  CONN["fabricinterop_onelake_connection"]
+  MIRROR["fabricinterop_catalog_mirror"]
+  SQL["Fabric SQL endpoint"]
+  READER["Fabric reader"]
+  WS["fabricinterop_onelake workspace"]
+  CAP["fabricadbmirror capacity"]
+  GEN --> NOTE --> SCHEMA --> LOC --> ITEM
+  CRED --> LOC
+  SCHEMA -. "UC metadata" .-> MIRROR
+  CONN -. "catalog access" .-> MIRROR
+  ITEM -. "underlying data" .-> MIRROR
+  MIRROR --> SQL --> READER
+  WS --- ITEM
+  WS --- MIRROR
+  CAP --- WS
+```
+
 This demo writes a small managed star schema from Azure Databricks into a Fabric
 Databricks Storage item's OneLake location using the documented Unity Catalog external
 location feature (Public Preview), then reads it from Fabric **through the mirrored
@@ -23,7 +51,7 @@ item directly.
 ## What is here
 
 - [`../demo-specification.md`](../demo-specification.md) — canonical implementation
-  specification shared by both demos.
+  specification shared by all three demos.
 - [`architecture.mmd`](architecture.mmd) — editable Mermaid architecture.
 - [`config.example.json`](config.example.json) — non-secret settings template. Make a
   private `config.json` copy and fill in real values only in your local working copy.
@@ -299,17 +327,21 @@ the matching observation, not the first visibility time.
 
 - OneLake external-location integration is Public Preview and may change or have
   availability restrictions.
-- The manifest contains resource IDs and partial deployment evidence, but no measured
-  mirror latency or claim of successful end-to-end deployment.
+- The original baseline missed its deadline; a later baseline matched and the append
+  was observed within its deadline. Neither observation establishes first-visibility
+  latency.
 - Configuration and samples contain no secrets. Keep any local real configuration out
   of version control; never put tokens or SAS values in files or logs.
 - Reruns intentionally stop on existing tables. The demo does not discover/adopt
   resources by prefix.
-- Delta transaction idempotency and the append-state guard are implemented locally, but
-  no concurrent or repeated notebook run has been exercised against a live Delta table.
+- A guarded initial-table rerun was rejected without changing the baseline. Concurrent
+  append execution has not been exercised.
 - Cleanup is a manual operation, never automatic. Review the sanitized manifest, require
   the exact confirmation shown by the offline cleanup planner, and manually remove only
-  resources explicitly recorded as created by this demo. First verify every entry and
+  resources explicitly recorded as created by this demo. Demo 3 uses
+  `fabricinterop_onelake_cred` and its mirrors reuse the existing Fabric
+  Databricks connection; do not remove either until those dependencies are
+  explicitly resolved. First verify every entry and
   then run:
 
   ```powershell
@@ -317,6 +349,6 @@ the matching observation, not the first visibility time.
   ```
 
   This command only prints supported top-level kinds; it does not list the recorded
-  Fabric connection, Databricks workspace files, notebooks, directory tree, or
+  Databricks workspace files, notebooks, directory tree, or
   individual tables. Review those manifest entries separately. It never deletes
   anything. Do not remove resources absent from the sanitized manifest.

@@ -1,19 +1,22 @@
 flowchart LR
-  person["Presenter: Entra identity"] -->|authorized UI / SQL| DB
-  subgraph DB["Existing Databricks workspace / UC-enabled SQL warehouse"]
-    UC["Explicitly approved parent catalog"]
-    subgraph SC["New, independent Power BI demo schema"]
-      D["DimDate / DimProduct / DimCustomer"]
-      F["FactSales: informational FKs"]
-    end
-    UC --> SC
-    D --> F
-  end
-  subgraph FAB["New home-tenant Fabric workspace, existing approved capacity"]
-    SM["New Power BI semantic model"]
-    R["Sales report with slicers"]
-    SM --> R
-  end
-  person -->|Entra consent; Catalog Explorer Publish to Power BI| SM
-  SM -->|OAuth default; DirectQuery per query| DB
-  DB -.->|Import mode only: refresh copies data| SM
+  GEN["Shared baseline generator"]
+  NOTE["Source load + append"]
+  SCHEMA["dbxfabricinterop<br/>fabricinterop_powerbi schema"]
+  DIM["Three dimensions"]
+  FACT["FactSales"]
+  WH["Existing SQL warehouse"]
+  PUB["Catalog Explorer<br/>Publish to Power BI"]
+  MODEL["dbxfabricinterop-fabricinterop_powerbi<br/>DirectQuery model"]
+  REPORT["fabricinterop_powerbi_report"]
+  READER["Presenter"]
+  WS["fabricinterop_powerbi workspace"]
+  CAP["fabricadbmirror capacity"]
+  GEN --> NOTE --> SCHEMA
+  SCHEMA --> DIM
+  SCHEMA --> FACT
+  DIM -. "informational relationships" .-> FACT
+  SCHEMA --> PUB --> MODEL --> REPORT --> READER
+  MODEL -->|"DirectQuery"| WH --> SCHEMA
+  WS --- MODEL
+  WS --- REPORT
+  CAP --- WS

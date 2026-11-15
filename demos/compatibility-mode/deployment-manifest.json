@@ -1,0 +1,724 @@
+{
+  "demo": "compatibility-mode",
+  "status": "deployed_with_normal_mv_mirror_discovery_gap",
+  "tenant_id": "4526cee1-4399-4e4b-9134-46fabd583527",
+  "reused_resources": {
+    "databricks_workspace_id": "5878076557050",
+    "catalog": "dbxfabricinterop",
+    "capacity_id": "de12195c-40d2-4bee-af60-f0d6dedfbb0f",
+    "storage_credential": "fabricinterop_onelake_cred",
+    "fabric_connection_id": "18f5c646-f700-4f5b-bc1e-ba0e4be2224f",
+    "fallback_storage_account": "dbxfabricinterop"
+  },
+  "created_resources": [
+    {
+      "kind": "fabric_notebook_job",
+      "id": "7cb1f9e1-b6b3-4734-8475-ce028f0cd3ab",
+      "notebook_id": "3b54074c-e5ce-45b9-b37b-63929e2079b1",
+      "purpose": "Final post-refresh full Spark validation",
+      "status": "completed; all five compatibility hashes match the deterministic reference; four normal mirror reads report commit-coordinator errors",
+      "start_utc": "2026-11-15T07:02:04Z",
+      "end_utc": "2026-11-15T07:02:49Z",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_notebook_job",
+      "id": "864a8ce2-8aeb-4a9f-8526-21154f172b3e",
+      "notebook_id": "3b54074c-e5ce-45b9-b37b-63929e2079b1",
+      "purpose": "Full normal and compatibility Spark validation",
+      "status": "completed; all five compatibility hashes matched; four normal mirror reads reported commit-coordinator errors",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_notebook",
+      "name": "fabricinterop_cc_validate_demo",
+      "id": "3b54074c-e5ce-45b9-b37b-63929e2079b1",
+      "operation_id": "ed025809-311e-4d91-badb-9bdb842c3949",
+      "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "lakehouse_id": "66f0d6e6-48f0-461d-901d-e4cc50f5c345",
+      "purpose": "Verify baseline and full aggregate through intended Fabric paths.",
+      "status": "provisioned",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_lakehouse_shortcut_group",
+      "lakehouse_id": "66f0d6e6-48f0-461d-901d-e4cc50f5c345",
+      "target_item_id": "9cd08f89-7f99-4666-9d5b-193d4f836018",
+      "target_base": "Tables/fabricinterop_cc_normal",
+      "names": ["normal_dimdate", "normal_dimproduct", "normal_dimcustomer", "normal_factsales"],
+      "purpose": "Normal-source mirror-based Fabric Spark validation.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_lakehouse_shortcut_group",
+      "lakehouse_id": "66f0d6e6-48f0-461d-901d-e4cc50f5c345",
+      "connection_id": "f9a95c39-5440-4494-a5c5-1a2cf5d467dc",
+      "target_base": "https://dbxfabricinterop.dfs.core.windows.net/fabricinterop-compat-200976aa/compatiblity/fabricinterop_cc_compat",
+      "targets": {"compat_dimdate": "dimdate-200976aa", "compat_dimproduct": "dimproduct-7ce921b4", "compat_dimcustomer": "dimcustomer-7ce921b4", "compat_factsales": "factsales-7ce921b4", "compat_sales_by_day_product_region_segment": "salesagg-7ce921b4"},
+      "purpose": "Direct shortcuts to generated read-only compatibility outputs.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_mirrored_catalog",
+      "name": "fabricinterop_cc_normal_mirror",
+      "id": "9cd08f89-7f99-4666-9d5b-193d4f836018",
+      "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "operation_id": "52d69958-5bf5-4d28-9ce3-b707fe3cc8d4",
+      "selection": "fabricinterop_cc_normal: four baseline tables and sales_by_day_product_region_segment",
+      "status": "synced four managed source tables; normal MV selected but not exposed",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_materialized_view_group",
+      "name": "sales_by_day_product_region_segment",
+      "schemas": ["dbxfabricinterop.fabricinterop_cc_normal", "dbxfabricinterop.fabricinterop_cc_compat"],
+      "ids": ["5a921a07-f17d-400c-bdf3-5b6ce79c08df", "493fc84d-147d-4a0c-bf7b-a618dedf40b9"],
+      "backing_table_ids": ["ebe05784-8070-42b6-8824-366674d11e71", "248c0ae8-aa6a-4eb8-a736-92e7bf12a5e3"],
+      "pipeline_ids": ["bd76285d-e86f-44cb-b4f4-75359a491783", "cccce4b6-3b5f-4e3d-b9fb-6c36774b0d23"],
+      "creation_statement_ids": ["01f1e0c0-2649-1aa7-9e80-02e71ea90b2a", "01f1e0c0-3cf4-141c-8c14-a911f2318b45"],
+      "compatibility_destination": "abfss://fabricinterop-compat-200976aa@dbxfabricinterop.dfs.core.windows.net/compatiblity/fabricinterop_cc_compat/salesagg-7ce921b4",
+      "status": "both native MV pipeline refreshes completed; compatibility output matches the complete reference in Fabric SQL and Spark; normal MV not exposed by normal mirror",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_external_volume_group",
+      "schema": "dbxfabricinterop.fabricinterop_cc_canary",
+      "names": ["prepare_dimproduct", "prepare_dimcustomer", "prepare_factsales", "prepare_salesagg"],
+      "paths": ["compatiblity/fabricinterop_cc_compat/dimproduct-7ce921b4", "compatiblity/fabricinterop_cc_compat/dimcustomer-7ce921b4", "compatiblity/fabricinterop_cc_compat/factsales-7ce921b4", "compatiblity/fabricinterop_cc_compat/salesagg-7ce921b4"],
+      "creation_statement_ids": ["01f1e0bf-d96a-1c25-b73a-3886db6a9bb3", "01f1e0bf-da44-1f72-b111-b59da0ebe029", "01f1e0bf-daeb-10e9-a65e-f1a5d440dda9", "01f1e0bf-db9e-12bc-89f1-2abe631077c6"],
+      "status": "removed; all four directories listed empty before external volume metadata was dropped",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_managed_table_group",
+      "schema": "dbxfabricinterop.fabricinterop_cc_normal",
+      "tables": ["DimDate", "DimProduct", "DimCustomer", "FactSales"],
+      "creation_statement_ids": ["01f1e0bf-516d-1f21-a616-2dab364d7bff", "01f1e0bf-5400-1207-abc6-86ada09aad80", "01f1e0bf-55b9-1aa4-a54e-97e200b058c5", "01f1e0bf-572c-1c87-94e0-fd561b03aa51"],
+      "purpose": "New normal catalog-commit producers.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_managed_table_group",
+      "schema": "dbxfabricinterop.fabricinterop_cc_compat",
+      "tables": ["DimProduct", "DimCustomer", "FactSales"],
+      "creation_statement_ids": ["01f1e0bf-591a-1223-9cf9-5cdfb6580f46", "01f1e0bf-5abb-1bd3-8db5-0522f576ee63", "01f1e0bf-5c80-1bbe-b3b7-dcc78cf2f403"],
+      "purpose": "Additional new compatibility catalog-commit producers.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_schema",
+      "name": "dbxfabricinterop.fabricinterop_cc_normal",
+      "storage_root": "abfss://200976aa-ae68-45b0-a575-1e16e8bfcc1f@onelake.dfs.fabric.microsoft.com/5e431e68-199b-4bc5-9a56-2dc5e8b1cfbf/Files/managed",
+      "creation_statement_id": "01f1e0bf-3c51-116b-9bc2-c291915119a7",
+      "created_by_demo": true
+    },
+    {
+      "kind": "uc_external_location",
+      "name": "fabricinterop_cc_normal",
+      "id": "2bb880a1-a71a-4902-af3a-b58ab4920222",
+      "url": "abfss://200976aa-ae68-45b0-a575-1e16e8bfcc1f@onelake.dfs.fabric.microsoft.com/5e431e68-199b-4bc5-9a56-2dc5e8b1cfbf/Files",
+      "credential_name": "fabricinterop_onelake_cred",
+      "effective_enable_file_events": false,
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_data_access_role",
+      "name": "DatabricksManagedIdentity",
+      "id": "f452dc23-32be-4655-9285-681e83a1f3cc",
+      "item_id": "5e431e68-199b-4bc5-9a56-2dc5e8b1cfbf",
+      "principal_id": "afcfa273-c0c4-4a70-9e09-232a5502cec4",
+      "permission": "ReadWrite",
+      "scope": "new normal Storage item only",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_storage_item",
+      "name": "fabricinterop_cc_normal_storage",
+      "id": "5e431e68-199b-4bc5-9a56-2dc5e8b1cfbf",
+      "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "purpose": "Normal catalog-commit producers.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_mirrored_catalog",
+      "name": "fabricinterop_cc_canary_mv_source_mirror",
+      "id": "5511c0b5-83a0-4626-9250-4a4a2da75990",
+      "operation_id": "eec80f81-7658-4054-85eb-2e2c18f6aa24",
+      "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "selection": "fabricinterop_cc_canary.canary_mv_compat and canary_mv",
+      "purpose": "Isolated native MV mapping experiment, not the normal demo mirror.",
+      "status": "compatibility MV maps to generated ADLS output; compatibility-off MV was not exposed",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_notebook_job",
+      "id": "1a0f25f3-1feb-4736-824b-0737e0c917fb",
+      "notebook_id": "f77fece9-7cb5-458a-afed-6644c0c476e4",
+      "purpose": "Generated native MV compatibility canary Spark read",
+      "status": "completed; Spark returned rows (after, 1), (before, 1)",
+      "spark_version": "4.1.1.5.5.20260929.238183312",
+      "start_utc": "2026-11-15T06:27:30.8395925Z",
+      "end_utc": "2026-11-15T06:28:04.6986734Z",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_lakehouse_shortcut",
+      "name": "canary_mv_compat",
+      "lakehouse_id": "66f0d6e6-48f0-461d-901d-e4cc50f5c345",
+      "path": "Tables/canary_mv_compat",
+      "target": "https://dbxfabricinterop.dfs.core.windows.net/fabricinterop-compat-200976aa/compatiblity/fabricinterop_cc_compat/canary-mv-a62f1dcb",
+      "connection_id": "f9a95c39-5440-4494-a5c5-1a2cf5d467dc",
+      "purpose": "Native MV compatibility-output feasibility pilot.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_materialized_view",
+      "name": "dbxfabricinterop.fabricinterop_cc_canary.canary_mv_compat",
+      "id": "7341f3f3-6844-479f-bdb6-5bf8f36802fa",
+      "pipeline_id": "42434453-0fd0-4706-b598-b482c86ef049",
+      "backing_table_id": "b6875b80-c062-43e1-aaef-b7b98083643c",
+      "creation_statement_id": "01f1e0bd-1b45-1a10-a620-e687b53663c7",
+      "compatibility_destination": "abfss://fabricinterop-compat-200976aa@dbxfabricinterop.dfs.core.windows.net/compatiblity/fabricinterop_cc_compat/canary-mv-a62f1dcb",
+      "purpose": "Isolated native MV with catalog commits and Compatibility Mode.",
+      "status": "created and refreshed; generated output read through Lakehouse SQL and Spark in the isolated canary",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_external_volume",
+      "name": "dbxfabricinterop.fabricinterop_cc_canary.prepare_mv_output",
+      "url": "abfss://fabricinterop-compat-200976aa@dbxfabricinterop.dfs.core.windows.net/compatiblity/fabricinterop_cc_compat/canary-mv-a62f1dcb",
+      "creation_statement_id": "01f1e0bc-f611-120b-9d6e-cd3bdce552cd",
+      "purpose": "Prepare a unique empty canary MV output directory.",
+      "status": "removed; external directory preserved after empty listing",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_materialized_view",
+      "name": "dbxfabricinterop.fabricinterop_cc_canary.canary_mv",
+      "creation_statement_id": "01f1e0bc-4861-1264-ac48-891197c75ecc",
+      "purpose": "Isolated native materialized-view compatibility feasibility gate.",
+      "status": "created and refreshed as compatibility-off canary; selected in the canary mirror but not exposed",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_notebook_job",
+      "id": "07b9b9d9-5796-471b-bb5b-fa430c6554d7",
+      "notebook_id": "f77fece9-7cb5-458a-afed-6644c0c476e4",
+      "purpose": "Generated compatibility canary Spark read",
+      "status": "completed; Spark returned rows (1, before), (2, after) through generated output",
+      "spark_version": "4.1.1.5.5.20260929.238183312",
+      "start_utc": "2026-11-15T06:13:53.5966278Z",
+      "end_utc": "2026-11-15T06:14:22.7644548Z",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_notebook",
+      "name": "fabricinterop_cc_validate_output",
+      "id": "f77fece9-7cb5-458a-afed-6644c0c476e4",
+      "operation_id": "bd1f30a1-e01a-4694-ab23-007e2b98138b",
+      "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "lakehouse_id": "66f0d6e6-48f0-461d-901d-e4cc50f5c345",
+      "purpose": "Read-only populated generated compatibility output pilot.",
+      "status": "provisioned",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_lakehouse_shortcut",
+      "name": "canary_compat",
+      "lakehouse_id": "66f0d6e6-48f0-461d-901d-e4cc50f5c345",
+      "path": "Tables/canary_compat",
+      "target": "https://dbxfabricinterop.dfs.core.windows.net/fabricinterop-compat-200976aa/compatiblity/fabricinterop_cc_compat/canary-200976aa",
+      "connection_id": "f9a95c39-5440-4494-a5c5-1a2cf5d467dc",
+      "purpose": "Populated generated compatibility-output canary; not the final demo data.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_connection",
+      "name": "fabricinterop_cc_compat_adls_identity",
+      "id": "f9a95c39-5440-4494-a5c5-1a2cf5d467dc",
+      "type": "AzureDataLakeStorage",
+      "path": "https://dbxfabricinterop.dfs.core.windows.net/fabricinterop-compat-200976aa",
+      "credential_type": "WorkspaceIdentity",
+      "purpose": "Secret-free demo compatibility-output shortcuts.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "azure_role_assignment",
+      "name": "Workspace identity Storage Blob Delegator",
+      "id": "/subscriptions/0a0cf761-9d5d-4862-9165-7b69c188a0ee/resourceGroups/rg_fabric/providers/Microsoft.Storage/storageAccounts/dbxfabricinterop/providers/Microsoft.Authorization/roleAssignments/3a71a873-7fd6-4e5f-9b44-27307eb8698d",
+      "principal_id": "43d28cee-7d78-4ba7-8edd-52d41a92c085",
+      "scope": "dbxfabricinterop storage account",
+      "impact": "Allows generation of user-delegation keys at account scope; data access remains separately restricted to the demo container.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "azure_role_assignment",
+      "name": "Workspace identity Storage Blob Data Reader",
+      "id": "/subscriptions/0a0cf761-9d5d-4862-9165-7b69c188a0ee/resourceGroups/rg_fabric/providers/Microsoft.Storage/storageAccounts/dbxfabricinterop/blobServices/default/containers/fabricinterop-compat-200976aa/providers/Microsoft.Authorization/roleAssignments/4a2bea63-e62d-41d5-8ab5-89e708c31e6f",
+      "principal_id": "43d28cee-7d78-4ba7-8edd-52d41a92c085",
+      "scope": "pilot container fabricinterop-compat-200976aa only",
+      "purpose": "Read-only access for compatibility-output shortcuts.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_workspace_identity",
+      "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "operation_id": "416f66e9-29d8-4322-aa49-b0959322d40a",
+      "application_id": "752c919d-2342-4102-ae95-f22a276b1b5a",
+      "service_principal_id": "43d28cee-7d78-4ba7-8edd-52d41a92c085",
+      "identity_item_id": "c219eafc-dad1-44cf-90f7-55316bb8d0a7",
+      "purpose": "Demo-scoped, secret-free access to generated compatibility outputs.",
+      "status": "provisioned",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_notebook",
+      "name": "fabricinterop_cc_validate_source",
+      "id": "eb0ec732-15ad-46a1-88a4-287e5542f100",
+      "operation_id": "4dff4c5d-f15b-48fb-8a64-e3f098eef105",
+      "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "lakehouse_id": "66f0d6e6-48f0-461d-901d-e4cc50f5c345",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_lakehouse_shortcut",
+      "name": "pilot_dimdate",
+      "lakehouse_id": "66f0d6e6-48f0-461d-901d-e4cc50f5c345",
+      "path": "Tables/pilot_dimdate",
+      "target_item_id": "7f0b14b6-52e7-45d4-af1d-d292f91e2740",
+      "target_path": "Tables/fabricinterop_cc_compat/dimdate",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_lakehouse",
+      "name": "fabricinterop_cc_validation",
+      "id": "66f0d6e6-48f0-461d-901d-e4cc50f5c345",
+      "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "purpose": "Mirror-based pilot validation only.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_schema",
+      "name": "dbxfabricinterop.fabricinterop_cc_canary_read",
+      "id": "5b488df1-98c4-4e32-a672-cbcd038b25b5",
+      "storage_root": "abfss://200976aa-ae68-45b0-a575-1e16e8bfcc1f@onelake.dfs.fabric.microsoft.com/087dd564-3d1f-4341-99a7-c489185b9cab/Files/canaryreadmanaged",
+      "purpose": "Isolated canary read-clone registration experiment.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_managed_table",
+      "name": "dbxfabricinterop.fabricinterop_cc_canary.canary_source",
+      "id": "3f2b7212-d665-47fe-88ad-38682a813e6f",
+      "storage_location": "abfss://200976aa-ae68-45b0-a575-1e16e8bfcc1f@onelake.dfs.fabric.microsoft.com/087dd564-3d1f-4341-99a7-c489185b9cab/Files/canarymanaged/__unitystorage/schemas/e59e35b2-5d69-43f5-b738-686cd8985754/tables/3f2b7212-d665-47fe-88ad-38682a813e6f",
+      "purpose": "Isolated experimental canary, not demo baseline data.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "azure_storage_directory",
+      "name": "compatiblity/fabricinterop_cc_compat/canary-200976aa",
+      "container": "fabricinterop-compat-200976aa",
+      "purpose": "Unique generated output for the isolated canary.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_external_volume",
+      "name": "dbxfabricinterop.fabricinterop_cc_canary.prepare_output",
+      "id": "85848689-6c89-464f-91d6-5c2211f42966",
+      "url": "abfss://fabricinterop-compat-200976aa@dbxfabricinterop.dfs.core.windows.net/compatiblity/fabricinterop_cc_compat/canary-200976aa",
+      "purpose": "Temporary path preparation; external volume metadata removed after verifying the empty directory remains.",
+      "status": "removed",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_schema",
+      "name": "dbxfabricinterop.fabricinterop_cc_canary",
+      "id": "e59e35b2-5d69-43f5-b738-686cd8985754",
+      "storage_root": "abfss://200976aa-ae68-45b0-a575-1e16e8bfcc1f@onelake.dfs.fabric.microsoft.com/087dd564-3d1f-4341-99a7-c489185b9cab/Files/canarymanaged",
+      "purpose": "Isolated canary source and temporary directory preparation.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_mirrored_catalog",
+      "name": "fabricinterop_cc_compat_mirror",
+      "id": "7f0b14b6-52e7-45d4-af1d-d292f91e2740",
+      "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "operation_id": "d1617f52-fb6d-4813-aa19-a3c3a653c683",
+      "selection": "Partial: fabricinterop_cc_compat.dimdate only; auto-sync disabled.",
+      "status": "provisioned; serves managed source, not generated output",
+      "created_by_demo": true
+    },
+    {
+      "kind": "uc_external_location",
+      "name": "fabricinterop_cc_compat_adls",
+      "id": "6b31d6f9-2177-4708-96de-45954ce07e82",
+      "url": "abfss://fabricinterop-compat-200976aa@dbxfabricinterop.dfs.core.windows.net/compatiblity/fabricinterop_cc_compat",
+      "credential_name": "fabricinterop_onelake_cred",
+      "effective_enable_file_events": false,
+      "created_by_demo": true
+    },
+    {
+      "kind": "azure_storage_directory",
+      "name": "compatiblity/fabricinterop_cc_compat/dimdate-200976aa",
+      "container": "fabricinterop-compat-200976aa",
+      "purpose": "Initially empty, unique Compatibility Mode pilot destination.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "azure_role_assignment",
+      "name": "Temporary caller Storage Blob Data Contributor",
+      "id": "/subscriptions/0a0cf761-9d5d-4862-9165-7b69c188a0ee/resourceGroups/rg_fabric/providers/Microsoft.Storage/storageAccounts/dbxfabricinterop/blobServices/default/containers/fabricinterop-compat-200976aa/providers/Microsoft.Authorization/roleAssignments/9e0675ea-622d-4e93-872c-baa5fdbd9bbe",
+      "principal_id": "c2934d7c-4724-4cef-a50e-2a5d89afb4a4",
+      "scope": "pilot container fabricinterop-compat-200976aa only",
+      "purpose": "Temporary creation of empty pilot destination; removed and absence verified after path preparation.",
+      "created_by_demo": true,
+      "status": "removed"
+    },
+    {
+      "kind": "azure_role_assignment",
+      "name": "Storage Blob Delegator",
+      "id": "/subscriptions/0a0cf761-9d5d-4862-9165-7b69c188a0ee/resourceGroups/rg_fabric/providers/Microsoft.Storage/storageAccounts/dbxfabricinterop/providers/Microsoft.Authorization/roleAssignments/4319dd1e-2922-43f8-8e79-b90f77b1a4fc",
+      "principal_id": "afcfa273-c0c4-4a70-9e09-232a5502cec4",
+      "scope": "dbxfabricinterop storage account",
+      "impact": "Allows generation of user-delegation keys at account scope; data permissions remain separately scoped.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "azure_role_assignment",
+      "name": "Storage Blob Data Contributor",
+      "id": "/subscriptions/0a0cf761-9d5d-4862-9165-7b69c188a0ee/resourceGroups/rg_fabric/providers/Microsoft.Storage/storageAccounts/dbxfabricinterop/blobServices/default/containers/fabricinterop-compat-200976aa/providers/Microsoft.Authorization/roleAssignments/6bf14c6e-b4b2-42fe-bc4e-dadf9f3e0081",
+      "principal_id": "afcfa273-c0c4-4a70-9e09-232a5502cec4",
+      "scope": "pilot container fabricinterop-compat-200976aa only",
+      "created_by_demo": true
+    },
+    {
+      "kind": "azure_storage_container",
+      "name": "fabricinterop-compat-200976aa",
+      "id": "/subscriptions/0a0cf761-9d5d-4862-9165-7b69c188a0ee/resourceGroups/rg_fabric/providers/Microsoft.Storage/storageAccounts/dbxfabricinterop/blobServices/default/containers/fabricinterop-compat-200976aa",
+      "public_access": "off",
+      "purpose": "Isolated compatibility-output fallback pilot.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_workspace",
+      "name": "fabricinterop_compatibility",
+      "id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "capacity_id": "de12195c-40d2-4bee-af60-f0d6dedfbb0f",
+      "created_by_demo": true
+    },
+    {
+      "kind": "fabric_storage_item",
+      "name": "fabricinterop_cc_compat_storage",
+      "id": "087dd564-3d1f-4341-99a7-c489185b9cab",
+      "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "created_by_demo": true
+    },
+    {
+      "kind": "uc_external_location",
+      "name": "fabricinterop_cc_compat",
+      "url": "abfss://200976aa-ae68-45b0-a575-1e16e8bfcc1f@onelake.dfs.fabric.microsoft.com/087dd564-3d1f-4341-99a7-c489185b9cab/Files",
+      "credential_name": "fabricinterop_onelake_cred",
+      "id": "7e72cb28-abc6-4390-98cb-6231587cf939",
+      "effective_enable_file_events": false,
+      "file_events_note": "Create initially returned enabled despite CLI false flag; explicitly disabled and read back immediately.",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_schema",
+      "name": "dbxfabricinterop.fabricinterop_cc_compat",
+      "id": "d9b88e45-2087-42d9-903a-c85e67fb2225",
+      "storage_root": "abfss://200976aa-ae68-45b0-a575-1e16e8bfcc1f@onelake.dfs.fabric.microsoft.com/087dd564-3d1f-4341-99a7-c489185b9cab/Files/managed",
+      "created_by_demo": true
+    },
+    {
+      "kind": "databricks_managed_table",
+      "name": "dbxfabricinterop.fabricinterop_cc_compat.dimdate",
+      "id": "b0a3b04e-262b-4657-9605-3fc0569a8fee",
+      "storage_location": "abfss://200976aa-ae68-45b0-a575-1e16e8bfcc1f@onelake.dfs.fabric.microsoft.com/087dd564-3d1f-4341-99a7-c489185b9cab/Files/managed/__unitystorage/schemas/d9b88e45-2087-42d9-903a-c85e67fb2225/tables/b0a3b04e-262b-4657-9605-3fc0569a8fee",
+      "created_by_demo": true
+    }
+  ],
+  "evidence": [
+    {
+      "kind": "native_mv_catalog_commit_describe_detail",
+      "observed_date_utc": "2026-11-15",
+      "reference": "https://learn.microsoft.com/en-us/azure/databricks/tables/features/catalog-commits#check-if-catalog-commits-are-enabled",
+      "warehouse_id": "f37863b7242d0931",
+      "results": [
+        {
+          "statement": "DESCRIBE DETAIL dbxfabricinterop.fabricinterop_cc_normal.sales_by_day_product_region_segment",
+          "statement_id": "01f1e0c4-7a1d-16c4-b80e-2cc70c4ae529",
+          "state": "FAILED",
+          "error_code": "BAD_REQUEST",
+          "sql_state": "42809",
+          "message": "[EXPECT_TABLE_NOT_VIEW.NO_ALTERNATIVE] 'DESCRIBE DETAIL' expects a table but `dbxfabricinterop`.`fabricinterop_cc_normal`.`sales_by_day_product_region_segment` is a view.  SQLSTATE: 42809; line 1 pos 0"
+        },
+        {
+          "statement": "DESCRIBE DETAIL dbxfabricinterop.fabricinterop_cc_compat.sales_by_day_product_region_segment",
+          "statement_id": "01f1e0c4-7afa-1b38-a6ae-0d597495ddd7",
+          "state": "FAILED",
+          "error_code": "BAD_REQUEST",
+          "sql_state": "42809",
+          "message": "[EXPECT_TABLE_NOT_VIEW.NO_ALTERNATIVE] 'DESCRIBE DETAIL' expects a table but `dbxfabricinterop`.`fabricinterop_cc_compat`.`sales_by_day_product_region_segment` is a view.  SQLSTATE: 42809; line 1 pos 0"
+        }
+      ],
+      "interpretation": "Neither command returned tableFeatures. UC identifies both objects as MATERIALIZED_VIEW and reports delta.feature.catalogManaged supported; neither this error nor that property proves the actual backing-source Delta protocol. Prior failed path-access experiments were not repeated."
+    },
+    {
+      "kind": "deployed_demo_validation",
+      "observed_date_utc": "2026-11-15",
+      "timeout_seconds": 900,
+      "normal_mirror": "9cd08f89-7f99-4666-9d5b-193d4f836018",
+      "normal_mapping": "Four tables resolve to normal OneLake managed sources; version-0 logs each report reader 3/writer 7 with catalogManaged in reader and writer features.",
+      "normal_sql": "All four tables discovered and queried: 365, 20, 100, 10000 rows; bidirectional EXCEPT against the compatibility tables returned no differences; facts total 930299.36 and 55196 units. Selected normal MV absent; query returned Invalid object name.",
+      "normal_spark": "Each of four mirror-based table queries failed with java.lang.IllegalStateException: Couldn't locate commit coordinator. Normal MV unavailable because mirror did not expose a shortcut.",
+      "compatibility_mapping": "Five Lakehouse shortcuts resolve to the five distinct generated ADLS paths, not managed source files. Each version-0 log reports reader 1/writer 7 with no readerFeatures or catalogManaged; source IDs match table IDs or the MV backing-table ID.",
+      "compatibility_freshness": "After source metadata changes all four source latest Delta versions and last refreshed versions were 2. MV backing version and generated output source snapshot version were 2.",
+      "compatibility_sql": "Counts 365, 20, 100, 10000, 9452; exact bidirectional EXCEPT against an independently recomputed aggregate returned 0 differences and 0 duplicate keys. TotalSales 930299.36, TotalQuantity 55196, SalesLineCount 10000.",
+      "compatibility_spark": "All five canonical sorted row SHA-256 digests match the deterministic local generator and 9452-group reference; see job 7cb1f9e1-b6b3-4734-8475-ce028f0cd3ab.",
+      "spark_version": "4.1.1.5.5.20260929.238183312",
+      "normal_mv": "Native MATERIALIZED_VIEW in UC, pipeline bd76285d-e86f-44cb-b4f4-75359a491783 update 236b2430-640b-4b5d-aa28-ebb093cf410a COMPLETED; UC reports catalogManaged supported and OneLake backing path. Actual backing-source protocol could not be read: OneLake returned 403 and Databricks direct DESCRIBE DETAIL returned LOCATION_OVERLAP.",
+      "compatibility_mv": "Native MATERIALIZED_VIEW in UC, pipeline cccce4b6-3b5f-4e3d-b9fb-6c36774b0d23 update 39976984-7a94-42ef-9624-7e9930653ac3 COMPLETED; UC reports catalogManaged supported and OneLake backing path. Actual backing-source protocol was not directly verified.",
+      "sql_mv_totals_statements": ["01f1e0c2-da4a-15e9-94dc-a77920cbedc9", "01f1e0c2-db2b-16be-bfad-4294cc9917cb"],
+      "databricks_mv_bidirectional_except_all": "Statement 01f1e0c3-3a9d-1f05-9e76-1c3050c43933 returned 0 rows in both directions.",
+      "limitations": "Normal MV mirror discovery and source backing protocol remain unresolved. No general product incompatibility inferred. No rerun or duplicate-protection deployment test performed."
+    },
+    {
+      "kind": "canary_direct_output_validation",
+      "observed_date_utc": "2026-11-15",
+      "table": "Fabric SQL and Spark returned (1, before), (2, after) through generated output shortcut.",
+      "mv": "Fabric SQL and Spark returned (after, 1), (before, 1) through generated native MV output shortcut; pipeline 42434453-0fd0-4706-b598-b482c86ef049 update 0bd7df66-5945-4e45-b9c1-fae186b1e114 COMPLETED.",
+      "mv_mirror_observation": "The selected compatibility canary MV also resolved its generated ADLS path through the canary mirror, unlike the table pilot. The separately selected compatibility-off canary MV was not exposed.",
+      "output_protocol": "Both canaries reader 1/writer 7, no readerFeatures or catalogManaged."
+    },
+    {
+      "kind": "compatibility_enablement",
+      "objects": ["dimproduct", "dimcustomer", "factsales"],
+      "schema": "dbxfabricinterop.fabricinterop_cc_compat",
+      "statement_ids": ["01f1e0c0-0fa4-1754-bc8d-5aa68f9e03cd", "01f1e0c0-1179-1dc8-b83e-82c8d3b1268e", "01f1e0c0-12b2-10c3-9aa0-1beb40672a9f"],
+      "note": "Unique previously nonexistent ADLS destinations, each verified empty. Refreshed and validated in both Fabric engines."
+    },
+    {
+      "kind": "baseline_load",
+      "observed_date_utc": "2026-11-15",
+      "schemas": ["dbxfabricinterop.fabricinterop_cc_normal", "dbxfabricinterop.fabricinterop_cc_compat"],
+      "empty_before_load": true,
+      "generator": "demos.common.star_schema default configuration, seed 42, start 2024-01-01",
+      "row_counts_each": {"DimDate": 365, "DimProduct": 20, "DimCustomer": 100, "FactSales": 10000},
+      "insert_statement_ids": ["01f1e0bf-97a7-1aee-8c23-7f62a77a2c8e", "01f1e0bf-9b92-1bf1-84ef-a5e7a591f906", "01f1e0bf-9dc2-1985-9aa2-c19c285a43ff", "01f1e0bf-a126-1c20-9e2a-89541525b84f", "01f1e0bf-a4d8-1886-a2ea-4229206dc624", "01f1e0bf-a73d-1991-9a08-525ee00f52e4", "01f1e0bf-a90e-15a5-b976-5b475c24304e", "01f1e0bf-ab65-1fe0-9979-6e742b984ab5"]
+    },
+    {
+      "kind": "two_mirror_reconciliation",
+      "observed_date_utc": "2026-11-15",
+      "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+      "workspace_mirror_count": 1,
+      "mirror_id": "7f0b14b6-52e7-45d4-af1d-d292f91e2740",
+      "mirror_selection": "Partial catalog and schema; only fabricinterop_cc_compat.dimdate; auto-sync disabled.",
+      "mirror_shortcut_table_id": "b0a3b04e-262b-4657-9605-3fc0569a8fee",
+      "mirror_resolved_path": "https://onelake.dfs.fabric.microsoft.com/200976aa-ae68-45b0-a575-1e16e8bfcc1f/087dd564-3d1f-4341-99a7-c489185b9cab/Files/managed/__unitystorage/schemas/d9b88e45-2087-42d9-903a-c85e67fb2225/tables/b0a3b04e-262b-4657-9605-3fc0569a8fee",
+      "source_properties": "Managed OneLake source; catalogManaged supported; Compatibility Mode enabled.",
+      "compatibility_output_path": "abfss://fabricinterop-compat-200976aa@dbxfabricinterop.dfs.core.windows.net/compatiblity/fabricinterop_cc_compat/dimdate-200976aa",
+      "normal_schema": "SCHEMA_DOES_NOT_EXIST",
+      "canary_read_schema": "No tables listed; prior generated-output registration failed LOCATION_OVERLAP.",
+      "result": "Neither the requested compatibility-output mirror nor the compatibility-off normal mirror exists. A supported UC asset or mirror selection mapping to the generated output is unresolved; no second mirror was created."
+    },
+    {
+      "kind": "fabric_spark_source_validation",
+      "notebook_id": "eb0ec732-15ad-46a1-88a4-287e5542f100",
+      "job_id": "fbc2f879-94ff-4f5a-9dbc-103b801712e3",
+      "observed_at_utc": "2026-11-14T22:55:46.993542Z",
+      "job_started_at_utc": "2026-11-14T22:55:38.7809595Z",
+      "job_ended_at_utc": "2026-11-14T22:55:58.118601Z",
+      "job_status": "Completed; structured exit reports both operations failed",
+      "spark_version": "4.1.1.5.5.20260929.238183312",
+      "python_version": "3.13.11",
+      "lakehouse_rest_listing": "pilot_dimdate listed as Delta at the Lakehouse shortcut path",
+      "spark_catalog_listing": "FAILED: java.lang.IllegalStateException: Couldn't locate commit coordinator for: `spark_catalog`.`fabricinterop_cc_validation`.`pilot_dimdate`",
+      "spark_sql_query": "FAILED: java.lang.IllegalStateException: Couldn't locate commit coordinator for: `spark_catalog`.`fabricinterop_cc_validation`.`pilot_dimdate`",
+      "result": "Feature-related Spark read failure through mirror-based shortcut; not a permission or timeout result.",
+      "deadline_seconds": 900,
+      "path_role": "Compatibility-enabled pilot source through mirrored catalog, not generated output or compatibility-off normal control."
+    },
+    {
+      "kind": "fabric_sql_source_validation",
+      "observed_date_utc": "2026-11-14",
+      "mirror_id": "7f0b14b6-52e7-45d4-af1d-d292f91e2740",
+      "authentication": "signed-in MCAP user; Azure SQL access token; connection succeeded",
+      "listing": "fabricinterop_cc_compat.dimdate visible in INFORMATION_SCHEMA.TABLES",
+      "query": "COUNT_BIG(*) = 0",
+      "path_role": "Compatibility-enabled pilot source through mirrored catalog, not generated output or compatibility-off normal control."
+    },
+    {
+      "kind": "isolated_canary_registration",
+      "observed_at_utc": "2026-11-14T22:43:00Z",
+      "source": "dbxfabricinterop.fabricinterop_cc_canary.canary_source",
+      "source_id": "3f2b7212-d665-47fe-88ad-38682a813e6f",
+      "output": "abfss://fabricinterop-compat-200976aa@dbxfabricinterop.dfs.core.windows.net/compatiblity/fabricinterop_cc_compat/canary-200976aa",
+      "source_history_before_registration": "Latest version 2; 1 row (1, before); catalogManaged enabled; generated copy refreshed at source version 2.",
+      "clone_delta_log_before_registration": "Version 0 JSON etag 0x8DF42A0905E5254, length 4750; 1 data parquet file.",
+      "clone_protocol": {"min_reader_version": 1, "min_writer_version": 7, "reader_features": "absent", "writer_features": ["domainMetadata", "redirectWriterOnly-preview", "rowTracking", "invariants", "appendOnly", "inCommitTimestamp", "clustering"]},
+      "registration_statement_id": "01f1e07c-d9d9-105d-90cc-1c5df4744d2f",
+      "result": "FAILED: INVALID_PARAMETER_VALUE.LOCATION_OVERLAP; CreateTable reported the generated output conflicts with dbxfabricinterop.fabricinterop_cc_canary.canary_source.",
+      "after_registration": "Source history and one row unchanged; every listed clone object retained its previous ETag and length; external table absent.",
+      "subsequent_refresh_statement_id": "01f1e07d-020e-15b9-b982-7605c7fe3f16",
+      "subsequent_refresh": "SUCCEEDED after appending a second canary row; source and last refreshed source version both 3, generated Delta version 1 exists.",
+      "fabric_mirror_sql_spark": "Not tested: registration failed and no external table exists.",
+      "notes": "Experimental canary only. No external table created. Source and generated copy were separately located. Vendor support for registering such a read clone remains unconfirmed."
+    },
+    {
+      "kind": "fabric_mirror_pilot",
+      "observed_at_utc": "2026-11-14T22:37:26Z",
+      "mirror_id": "7f0b14b6-52e7-45d4-af1d-d292f91e2740",
+      "sql_endpoint_id": "770d4585-0b2e-4c83-9b32-9a7f66604b26",
+      "sync_status": "Success",
+      "shortcut_table_id": "b0a3b04e-262b-4657-9605-3fc0569a8fee",
+      "shortcut_target": "https://onelake.dfs.fabric.microsoft.com/200976aa-ae68-45b0-a575-1e16e8bfcc1f/087dd564-3d1f-4341-99a7-c489185b9cab/Files/managed/__unitystorage/schemas/d9b88e45-2087-42d9-903a-c85e67fb2225/tables/b0a3b04e-262b-4657-9605-3fc0569a8fee",
+      "mirror_delta_log_read": "HTTP 200; version 0 minReaderVersion 3, minWriterVersion 7; readerFeatures include catalogManaged.",
+      "fabric_sql_listing": "dimdate discovered",
+      "fabric_sql_query": "COUNT_BIG returned 0 for the empty pilot table.",
+      "fabric_spark": "not tested",
+      "result": "Mirror serves the modern source protocol, not the generated ADLS compatibility output; feasibility gate not passed."
+    },
+    {
+      "kind": "generated_output_external_registration_assessment",
+      "date_utc": "2026-11-14",
+      "result": "No product documentation found confirming safe registration of a live generated read clone as a UC external table, including write-free creation and continued refresh semantics. No registration attempted.",
+      "metadata": "Generated Delta metadata identifies a ReadClone linked to source table b0a3b04e-262b-4657-9605-3fc0569a8fee and redirectWriterOnly-preview with refresh and vacuum non-redirect rules.",
+      "notes": "The generated ADLS path and managed OneLake source are physically disjoint. Lack of explicit support is not proof of prohibition; compatibility unsupported on external table producers does not answer this registration question.",
+      "references": ["https://learn.microsoft.com/en-us/azure/databricks/external-access/compatibility-mode", "https://learn.microsoft.com/en-us/azure/databricks/sql/language-manual/sql-ref-syntax-ddl-create-table-using", "https://learn.microsoft.com/en-us/azure/databricks/volumes/paths"]
+    },
+    {
+      "kind": "adls_compatibility_pilot",
+      "observed_at_utc": "2026-11-14T22:25:10Z",
+      "source": "dbxfabricinterop.fabricinterop_cc_compat.dimdate",
+      "destination": "abfss://fabricinterop-compat-200976aa@dbxfabricinterop.dfs.core.windows.net/compatiblity/fabricinterop_cc_compat/dimdate-200976aa",
+      "destination_before_enablement": "New container verified empty; newly created directory listed empty. No previous use within this new container.",
+      "enable_statement_id": "01f1e07a-7ed0-1be2-96ef-ae35842b7745",
+      "enable_result": "SUCCEEDED",
+      "source_describe_statement_id": "01f1e07a-a77d-1311-a83e-211b499d300d",
+      "source_protocol": {"min_reader_version": 3, "min_writer_version": 7, "catalog_managed": "supported"},
+      "refresh_statement_id": "01f1e07a-a8b7-1735-a57a-e2979529d9a8",
+      "refresh_result": "SUCCEEDED",
+      "generated_delta_version": 0,
+      "generated_protocol": {
+        "min_reader_version": 1,
+        "min_writer_version": 7,
+        "reader_features": "absent",
+        "writer_features": ["domainMetadata", "redirectWriterOnly-preview", "rowTracking", "invariants", "appendOnly", "inCommitTimestamp", "clustering"]
+      },
+      "notes": "At this observation the empty OneLake-managed table generated Delta output in ADLS; catalogManaged was absent from output reader and writer features. Native MV and Fabric mirror resolution had not yet been verified."
+    },
+    {
+      "kind": "credential_privilege_assessment",
+      "observed_at_utc": "2026-11-14T22:12:21Z",
+      "identity_statement_id": "01f1e078-7557-18c3-a717-40eeb8d79ef7",
+      "sql_execution_identity_matches_caller": true,
+      "sql_execution_identity_matches_credential_owner": true,
+      "sql_execution_identity_matches_location_owner": true,
+      "credential_direct_and_effective_grants": "Both returned empty objects; owner capabilities are implicit under documented Unity Catalog semantics.",
+      "result": "No explicit credential grant attempted: it would be redundant under documented ownership semantics and the Compatibility Mode destination is not verified safe for a subsequent write.",
+      "notes": "Compatibility Mode documents CREATE EXTERNAL TABLE on the location. Whether an explicit credential grant changes this specific runtime behavior is untested, not disproved. The shared credential was not modified."
+    },
+    {
+      "kind": "managed_storage_fallback_inventory",
+      "date_utc": "2026-11-14",
+      "storage_account": "dbstorager5gnpvsw2lsxs",
+      "existing_catalog_container": "unity-catalog-storage",
+      "managed_resource_group": "rg_fabricdbxinterop_managed",
+      "requested_folder": "compatiblity",
+      "deny_assignment_id": "84dda6fd-82b6-44e8-a197-e9f0b061d199",
+      "deny_assignment": "System-protected Databricks managed-resource-group deny covers all principals and child scopes, with all data actions denied and container control-plane write not excepted. The caller and reused managed identity are not the excluded service principal.",
+      "result": "blocked_by_protected_resource_policy",
+      "notes": "No container creation attempted, and no new container or folder created. The user's empty-path confirmation did not identify a path; it does not establish seven-day eligibility."
+    },
+    {
+      "kind": "external_table_pilot_prerequisite_check",
+      "observed_at_utc": "2026-11-14T22:05:00Z",
+      "result": "blocked_before_create",
+      "credential_read_only": false,
+      "caller_matches_location_and_credential_owner_metadata": true,
+      "schema_effective_privileges": "Inherited ALL_PRIVILEGES from catalog, and EXTERNAL_USE_SCHEMA.",
+      "list_location_statement_id": "01f1e077-10f5-10a3-a8f1-e42bfb056ca0",
+      "list_location_error": "PERMISSION_DENIED: Principal 'System Administrator' does not have READ FILES on External Location 'fabricinterop_cc_compat'.",
+      "list_credential_statement_id": "01f1e077-3f71-146e-a4cd-47b3ef3f56d1",
+      "list_credential_error": "INVALID_PARAMETER_VALUE.PATH_BASED_ACCESS_NOT_SUPPORTED_FOR_FABRIC",
+      "grant_read_files_statement_id": "01f1e077-6f37-1941-b8bc-0189541cdb43",
+      "grant_read_files_error": "Privilege READ FILES is not applicable to this entity [fabricinterop_cc_compat:EXTERNAL_LOCATION/EXTERNAL_LOCATION_ONELAKE_MANAGED].",
+      "notes": "No distinct empty path was verified and no external table or permission grant was created. Failures do not prove external-table creation is unsupported. The shared serverless warehouse was started and has a 10-minute auto-stop."
+    },
+    {
+      "kind": "external_table_credential_documentation",
+      "date_utc": "2026-11-14",
+      "result": "CREATE TABLE documentation permits LOCATION with an explicit credential; this does not document a credential override for Compatibility Mode's ALTER TABLE destination check.",
+      "untested": "External-table creation with an explicit credential on this OneLake location and any credential-level Compatibility Mode privilege experiment. No shared permissions changed.",
+      "references": [
+        "https://learn.microsoft.com/en-us/azure/databricks/sql/language-manual/sql-ref-external-tables",
+        "https://learn.microsoft.com/en-us/azure/databricks/sql/language-manual/sql-ref-syntax-ddl-create-table-using",
+        "https://learn.microsoft.com/en-us/azure/databricks/external-access/compatibility-mode"
+      ]
+    },
+    {
+      "kind": "read_only_destination_and_grants_check",
+      "observed_at_utc": "2026-11-14T21:45:05Z",
+      "target_under_location_root": true,
+      "target_disjoint_from_schema_managed_root": true,
+      "onelake_head_observed_at_utc": "2026-11-14T21:44:35Z",
+      "onelake_head_identity": "signed-in user with storage-scoped token",
+      "onelake_head_paths": [
+        "Files",
+        "Files/managed",
+        "Files/compatibility",
+        "Files/compatibility/dimdate"
+      ],
+      "onelake_head_status": "HTTP 403 Forbidden for all paths; no successful listing",
+      "uc_grants": "Paginated direct and effective queries for the external location and shared storage credential returned empty objects.",
+      "notes": "403 does not prove a path is absent, does not verify emptiness, and does not test the managed identity. Empty grant responses do not exclude owner or implicit privileges. Credential-level privilege sufficiency and the seven-day reuse rule remain unverified. No permissions were changed."
+    },
+    {
+      "kind": "onelake_location_type_investigation",
+      "date_utc": "2026-11-14",
+      "pilot_securable_type": "EXTERNAL_LOCATION",
+      "pilot_securable_kind": "EXTERNAL_LOCATION_ONELAKE_MANAGED",
+      "pilot_read_only": false,
+      "result": "No documented creation or update field for securable_kind or either proposed alternative kind was identified; no cloud writes performed.",
+      "untested": "Credential-level privilege might or might not satisfy the destination check; shared credential was not changed. Alternative kinds and other configurations were not tested."
+    },
+    {
+      "kind": "reused_compute_observation",
+      "observed_at_utc": "2026-11-14T21:33:08Z",
+      "warehouse_id": "f37863b7242d0931",
+      "status": "RUNNING",
+      "auto_stop_minutes": 10,
+      "capacity_status": "Active",
+      "notes": "Warehouse and Fabric capacity are shared; neither was stopped or resized."
+    },
+    {
+      "kind": "compatibility_destination_gate",
+      "observed_at_utc": "2026-11-14T21:30:27Z",
+      "statement_id": "01f1e072-6087-1975-b5ac-a97d548c74a7",
+      "result": "blocked",
+      "destination": "abfss://200976aa-ae68-45b0-a575-1e16e8bfcc1f@onelake.dfs.fabric.microsoft.com/087dd564-3d1f-4341-99a7-c489185b9cab/Files/compatibility/dimdate",
+      "error": "PERMISSION_DENIED: Principal does not have CREATE EXTERNAL TABLE on External Location 'fabricinterop_cc_compat'.",
+      "grant_attempt": "Privilege CREATE EXTERNAL TABLE is not applicable to this entity [fabricinterop_cc_compat:EXTERNAL_LOCATION/EXTERNAL_LOCATION_ONELAKE_MANAGED].",
+      "notes": "No compatibility output was generated. Destination existence and emptiness, MV compatibility, mirror resolution, and engine reads remain untested. The managed source retained catalogManaged."
+    },
+    {
+      "kind": "storage_data_access_role",
+      "name": "DatabricksManagedIdentity",
+      "id": "d9fc0a3c-368e-4b01-86a3-eaf0be6fa7bc",
+      "item_id": "087dd564-3d1f-4341-99a7-c489185b9cab",
+      "principal_id": "afcfa273-c0c4-4a70-9e09-232a5502cec4",
+      "permission": "ReadWrite"
+    },
+    {
+      "kind": "workspace_role",
+      "principal_id": "afcfa273-c0c4-4a70-9e09-232a5502cec4",
+      "role": "Viewer"
+    },
+    {
+      "kind": "workspace_setting",
+      "name": "Authenticate with OneLake user-delegated SAS tokens",
+      "scope": "demo workspace users",
+      "status": "enabled"
+    }
+  ]
+}
