@@ -292,11 +292,16 @@ class Workflow:
             raise DeploymentError("UC object ownership marker differs from this deployment.")
         storage = remote.get("storage_location", remote.get("storage_root", ""))
         recorded = self.state.data["inputs"].get("uc-storage/" + full_name)
+        if remote.get("table_type") == "MATERIALIZED_VIEW":
+            storage, recorded = "", None
         return {"id": remote[id_field], "name": full_name, "type": remote.get("table_type", "SCHEMA"),
                 "storage": storage or recorded or "", "ownership": self.marker,
-                "storage_evidence": "API metadata" if storage else "operator-entered location" if recorded else "not exposed"}
+                "storage_evidence": "not checked (MV backing metadata excluded)" if remote.get("table_type") == "MATERIALIZED_VIEW"
+                else "API metadata" if storage else "operator-entered location" if recorded else "not exposed"}
 
     def uc_check(self, db, kind, expected):
+        if expected["type"] == "MATERIALIZED_VIEW":
+            expected = dict(expected, storage="", storage_evidence="not checked (MV backing metadata excluded)")
         if self.uc_summary(db, kind, expected["name"]) != expected:
             raise DeploymentError("UC immutable identity, storage or ownership changed.")
 
@@ -317,16 +322,7 @@ class Workflow:
             expected_type = "MATERIALIZED_VIEW" if statement.startswith("CREATE MATERIALIZED VIEW") else "MANAGED"
             if kind == "tables" and result["type"] != expected_type:
                 raise DeploymentError("Created UC object is not the required managed table or native materialized view.")
-            if storage_prefix and not result["storage"] and expected_type == "MATERIALIZED_VIEW":
-                self.gate(key + "/backing-location", {"id": result["id"], "name": full_name, "expected_root": storage_prefix}, [
-                    "The native MV API did not expose its backing storage location. Inspect Catalog Explorer/DESCRIBE EXTENDED or the actual pipeline/backing metadata for this exact MV.",
-                    "Verify and provide the unsigned physical OneLake backing path below the selected managed root. Do not substitute the generated ADLS compatibility output or infer a path from a different table.",
-                    "If this location cannot be established, answer no and preserve the pending create statement. A source backing-protocol gap remains separate even when the location is known.",
-                ], ONELAKE_DOC)
-                self.input("uc-storage/" + full_name, "Actual unsigned OneLake MV backing storage URL",
-                           lambda value: url(value, ("onelake.dfs.fabric.microsoft.com",), "abfss"))
-                result = self.uc_summary(db, kind, full_name)
-            if storage_prefix and not result["storage"].rstrip("/").startswith(storage_prefix.rstrip("/") + "/"):
+            if storage_prefix and expected_type != "MATERIALIZED_VIEW" and not result["storage"].rstrip("/").startswith(storage_prefix.rstrip("/") + "/"):
                 # Schema storage_root may be exactly the supplied managed root.
                 if kind != "schemas" or result["storage"].rstrip("/") != storage_prefix.rstrip("/"):
                     raise DeploymentError("UC source storage does not match the selected OneLake managed location; inspect the actual backing location.")
@@ -445,9 +441,9 @@ class Workflow:
             self.sql_write(demo + "/uniform-refresh/" + table, db, warehouse,
                            f"REFRESH {kind} {qualified(spec['catalog'], compat, table)} SYNC UNIFORM")
         self.gate(demo + "/output-freshness", {"paths": outputs, "schema": spec["catalog"] + "." + compat}, [
-            "In Databricks run DESCRIBE HISTORY for each managed producer and DESCRIBE EXTENDED for all five objects. Record Uniform Compatibility Information Last Refreshed Version and Last Refreshed timestamp; compare to the current source version, or the MV's actual backing version.",
-            "Inspect the actual generated output Delta histories/logs in ADLS for all five paths. Record output ID, clone source/backing ID, source version, timestamp, reader/writer protocol and feature lists. Verify source ID/version equality, non-stale outputs and absence of catalogManaged in the generated copies; NEVER write to these paths.",
-            "If an MV's source protocol cannot be inspected (including DESCRIBE DETAIL returning EXPECT_TABLE_NOT_VIEW), record that specific backing-protocol gap. Do not infer a protocol from the UC MV type or a table's protocol.",
+            "For the four managed tables, inspect DESCRIBE HISTORY and Uniform Compatibility Information. Compare latest source and last-refreshed versions/timestamps; compare output clone source IDs to the table IDs.",
+            "Inspect the actual generated output Delta histories/logs in ADLS for all five paths. Verify output generation, IDs, reader/writer protocol, feature lists and absence of catalogManaged; NEVER write to these paths.",
+            "MV backing location, identity, version and protocol verification are excluded from this demo. Do not request or infer that evidence, or claim MV backing provenance/freshness was verified.",
             "If output generation/freshness is still pending, answer no and resume later. Initial generation can take an hour; the script does not extend a measured propagation deadline or regenerate/reload on resume.",
         ], COMPAT_DOC, lambda: self.check_generated_paths(db, spec["catalog"], compat, outputs))
         output_protocols = {table: adls.protocol(path) for table, path in outputs.items()}
@@ -459,19 +455,15 @@ class Workflow:
                 raise DeploymentError("Generated output immutable ID changed. Inspect its provenance before resuming.")
         provenance = {}
         for table in (*TABLES, MV):
-            source = db.get("tables", spec["catalog"] + "." + compat + "." + table)
             if table == MV:
-                self.gate(demo + "/mv-backing-identity", {"mv_id": source["table_id"], "name": spec["catalog"] + "." + compat + "." + table}, [
-                    "Establish the actual backing-table GUID from this MV's UC/pipeline metadata and compare it to the generated output's clone source GUID. The native MV GUID itself is not its backing-table GUID.",
-                    "The historical deployment recorded backing GUIDs and reported OneLake backing locations; the actual backing protocol was unavailable (EXPECT_TABLE_NOT_VIEW, OneLake 403 and LOCATION_OVERLAP). Those errors do not prove that IDs or locations are unavailable in every workspace.",
-                    "If the actual backing GUID cannot be established here, answer no and preserve all recorded resources/refreshes. Obtain supported metadata access or vendor clarification; never infer an ID from a different MV or bypass provenance checks.",
-                ], COMPAT_DOC)
-            source_id = (self.input(demo + "/backing-id", "Actual compatibility MV backing-table GUID from its metadata/log evidence")
-                         if table == MV else source["table_id"])
+                provenance[table] = {"comparison": "not checked (MV backing metadata excluded)"}
+                continue
+            source = db.get("tables", spec["catalog"] + "." + compat + "." + table)
+            source_id = source["table_id"]
             observed_clone_id = self.input(demo + "/clone-source/" + table,
-                                           f"Observed generated {table} clone source/backing GUID from its Delta log")
+                                           f"Observed generated {table} clone source GUID from its Delta log")
             if observed_clone_id != source_id:
-                raise DeploymentError("Output clone source ID does not match the actual producer/backing ID.")
+                raise DeploymentError("Output clone source ID does not match the actual producer table ID.")
             provenance[table] = {"source_id": source_id, "clone_source_id": observed_clone_id,
                                  "comparison": "matches; clone metadata entered by operator"}
         mirror = self.mirror(demo, spec, workspace, db, normal, (*TABLES, MV))
@@ -513,8 +505,9 @@ class Workflow:
                 "output_protocols": output_protocols,
                 "output_provenance": provenance,
                 "freshness_observations": freshness,
-                "output_freshness": "version metadata checked; MV backing version/provenance remain operator-attested",
-                "mv_backing_protocol": "not independently verified"}
+                "output_freshness": "table versions checked; MV backing freshness/provenance not checked",
+                "mv_backing_metadata": "not checked (excluded from demo setup)",
+                "mv_backing_protocol": "not checked (excluded from demo setup)"}
 
     @staticmethod
     def mirror_folder(value):
@@ -541,25 +534,24 @@ class Workflow:
                     raise Waiting("Native MV compatibility routing does not expose the expected generated output. No source-location substitute was used.")
 
     def freshness(self, demo, db, warehouse, catalog, schema, table):
+        if table == MV:
+            return {"evidence": "not checked (MV backing metadata excluded)"}
         target = qualified(catalog, schema, table)
         extended = db.query(warehouse, f"DESCRIBE TABLE EXTENDED {target}")
         metadata = {str(row[0]).strip().lower().lstrip("# ").strip(): str(row[1]).strip()
                     for row in extended["rows"] if len(row) >= 2}
         refreshed = metadata.get("last refreshed version")
         timestamp = metadata.get("last refreshed")
-        if table != MV:
-            history = db.query(warehouse, f"DESCRIBE HISTORY {target} LIMIT 1")
-            source_version = int(history["rows"][0][0]) if history["rows"] else None
-        else:
-            source_version = None
+        history = db.query(warehouse, f"DESCRIBE HISTORY {target} LIMIT 1")
+        source_version = int(history["rows"][0][0]) if history["rows"] else None
         mode = "SQL metadata"
         if source_version is None or refreshed is None or timestamp is None:
             self.gate(demo + "/freshness-metadata/" + table, {"object": catalog + "." + schema + "." + table}, [
-                "The returned metadata did not expose all required version fields in the documented row shape, or this is a native MV whose backing version requires inspection.",
-                "Inspect Catalog Explorer Uniform Compatibility Information and actual producer/backing history; record latest source/backing version, last-refreshed version and UTC timestamp at the following prompts.",
-                "Record the backing-protocol gap separately. Matching numeric versions alone is not evidence of the backing Delta protocol. If generation is pending, answer no.",
+                "The returned table metadata did not expose all required version fields in the documented row shape.",
+                "Inspect Catalog Explorer Uniform Compatibility Information and actual table history; record latest source version, last-refreshed version and UTC timestamp at the following prompts.",
+                "If generation is pending, answer no.",
             ], COMPAT_DOC, always=True)
-            source_version = self.version(self.console.ask(f"{table} actual latest source/backing version"))
+            source_version = self.version(self.console.ask(f"{table} actual latest source version"))
             refreshed = self.console.ask(f"{table} observed compatibility Last Refreshed Version")
             timestamp = self.console.ask(f"{table} observed Last Refreshed UTC (ISO 8601)")
             mode = "operator-entered metadata"
@@ -571,7 +563,7 @@ class Workflow:
         if moment.tzinfo is None or moment > datetime.now(timezone.utc):
             raise Waiting("Compatibility freshness timestamp is missing a timezone or is in the future.")
         if source_version != refreshed_version:
-            raise Waiting("Compatibility output is stale relative to the current source/backing version. Wait or explicitly approve another refresh; resume never blindly refreshes.")
+            raise Waiting("Compatibility output is stale relative to the current source table version. Wait or explicitly approve another refresh; resume never blindly refreshes.")
         return {"source_version": source_version, "refreshed_version": refreshed_version,
                 "refreshed_utc": moment.isoformat(), "evidence": mode}
 

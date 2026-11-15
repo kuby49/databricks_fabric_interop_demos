@@ -54,7 +54,8 @@ Choose `onelake`, `power-bi`, `compatibility`, or `all`. Configuration prompts f
 
 Additional immutable IDs are requested at their dependency checkpoint: Fabric
 capacity GUID (different from its ARM resource ID), tested connection IDs,
-native semantic-model/report IDs, and compatibility output/backing provenance.
+native semantic-model/report IDs, and table compatibility-output provenance.
+MV backing metadata is not requested or verified.
 Never paste credentials, PATs, tokens or SAS URLs into these prompts. Credentials
 belong in supported auth profiles, environment variables or the relevant service UI.
 
@@ -174,19 +175,19 @@ pass. API-readable prerequisites are reread on resume.
    See [Compatibility Mode](https://learn.microsoft.com/azure/databricks/external-access/compatibility-mode).
 7. **Compatibility generation and freshness:** required deployment statements
    create/refresh both native MVs and refresh all five genuine compatibility
-   versions with `SYNC UNIFORM`. Inspect producer/backing history, Uniform
-   Compatibility Information and output Delta histories. Record clone source/
-   backing IDs; these are compared to actual producer IDs (MV backing identity is
-   operator-entered). The script verifies returned compatibility routing and
-   actual output log IDs/protocol/features. Managed sources must remain beneath
-   their selected OneLake managed roots; absent native MV backing-location
-   metadata triggers a separate exact-location checkpoint rather than inference.
-   The validation Lakehouse explicitly uses non-schema-enabled Tables-root
-   shortcuts. It compares latest source and
-   last-refreshed versions via SQL metadata; unfamiliar metadata shapes and MV
-   backing versions trigger explicit fresh manual inputs. Stale/missing output
-   stays waiting. If the actual MV backing protocol is inaccessible, retain that
-   gap instead of inferring it from `MATERIALIZED_VIEW`.
+   versions with `SYNC UNIFORM`. Inspect the four table producers' history,
+   Uniform Compatibility Information and generated output Delta histories.
+   Table output clone source IDs are compared to actual table IDs. The script
+   verifies compatibility routing and actual output log IDs/protocol/features
+   for all five outputs. Table/schema managed storage must remain beneath the
+   selected OneLake roots. MV backing location, ID, version and protocol checks
+   are excluded; missing backing metadata does not block setup and is never
+   treated as verified evidence.
+   The validation Lakehouse uses non-schema-enabled Tables-root shortcuts.
+   Latest source and last-refreshed versions are compared for the four tables;
+   unfamiliar table metadata shapes trigger fresh manual inputs. Stale table
+   outputs or missing generated outputs stay waiting. MV creation, required
+   refresh, actual generated output and direct shortcut checks remain required.
 8. **Normal mirror discovery:** inspect actual normal mirror table paths; provide
    the discovered `Tables/<schema>` folder. The script checks all four normal
    tables before creating their mirror-based shortcuts. It records normal MV
@@ -208,7 +209,8 @@ The default outcome is `setup-checked`, `waiting`, or `blocked` per demo.
 `setup-checked` means resource IDs/ownership, assignment/definition read-back,
 recorded deployment statements and applicable metadata/manual gates were checked.
 It is **not an end-to-end success**. Power BI origin/relationships and compatibility
-clone metadata/backing versions include explicitly labeled operator evidence.
+table clone metadata include explicitly labeled operator evidence. MV backing
+metadata and backing-source freshness/provenance are **not checked**.
 
 ```text
 python -m demos.deploy --action resume --optional-checks
@@ -224,8 +226,9 @@ Existing demo append helpers must be adapted to this run's exact config/schema,
 never executed with a historical manifest. Preserve actual source commit times
 and original deadlines; a late match does not reset a failed SLA.
 
-Compatibility setup rereads SQL **version metadata** on resume because freshness
-is a prerequisite, not an optional data comparison. This may activate approved
+Compatibility setup rereads the four tables' SQL **version metadata** on resume
+because table freshness is a prerequisite, not an optional data comparison. It
+does not query or prompt for MV backing versions. This may activate approved
 warehouse compute. The output inspection notebook only reads fully qualified
 Lakehouse tables and prints counts; running it is optional and counts alone do
 not establish the full compatibility comparison.
@@ -284,14 +287,16 @@ observations, not universal product limits. No catalog-commit feature is disable
 no plain Delta copy substitutes for Compatibility Mode, and no externally
 registered copy substitutes for a generated output.
 
-**MV metadata feasibility:** the historical manifest records both native MVs'
+**MV backing metadata is excluded from guided setup:** no backing location, GUID,
+version or protocol prompts/checks are required, even if that metadata is
+unavailable. Setup reports this exclusion explicitly, not a verification pass.
+Existing waiting runs resume their recorded create/refresh handles without
+recreating resources; legacy backing checkpoints/inputs can remain in private
+state but are no longer required or used as verification evidence.
+The historical manifest records both native MVs'
 backing-table GUIDs and reports OneLake backing locations. Its failed
 `DESCRIBE DETAIL` by name (`EXPECT_TABLE_NOT_VIEW`), OneLake 403, and direct-path
 `LOCATION_OVERLAP` checks prevented verification of the **actual backing
-protocol**, not those recorded identities/locations. They cannot guarantee the
-same metadata will be accessible in a fresh environment. If this run cannot
-establish a required backing GUID or OneLake path, answer `no` at its dedicated
-checkpoint. The run stays waiting with the create/refresh handles intact;
-independent demos can continue. Seek supported UC/pipeline metadata access or
-vendor clarification and resume the same run. Do not reuse historical GUIDs,
-infer an ID/path, weaken provenance, replace the native MV or remove catalog commits.
+protocol**, not those recorded identities/locations. These observations are
+preserved as historical evidence only; they are not deployment blockers.
+Do not infer missing evidence, replace the native MV or remove catalog commits.

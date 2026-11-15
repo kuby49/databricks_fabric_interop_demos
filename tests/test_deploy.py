@@ -305,7 +305,7 @@ class Operator(Console):
         return True
 
     def read_input(self, label):
-        if "source/backing version" in label or "Last Refreshed Version" in label:
+        if "actual latest source version" in label or "Last Refreshed Version" in label:
             return "2"
         if "Last Refreshed UTC" in label:
             return "2024-01-01T00:00:00+00:00"
@@ -314,12 +314,8 @@ class Operator(Console):
         if "normal mirror folder" in label:
             schema = self.cloud.cfg["demos"]["compatibility"]["prefix"] + "_normal"
             return "Tables/" + schema
-        if "MV backing-table GUID" in label:
-            return self.cloud.backing_id
-        if "clone source/backing GUID" in label:
+        if "clone source GUID" in label:
             table = re.search(r"generated (\S+) clone", label)[1]
-            if table == MV:
-                return self.cloud.backing_id
             return self.cloud.tables["parent.compatibility_compat." + table]["table_id"]
         value = str(uuid4())
         if "semantic-model GUID" in label:
@@ -483,24 +479,70 @@ class DeploymentTests(unittest.TestCase):
             self.assertEqual(len([c for c in cloud.calls if c[0] == "PUT"]), creations)
             self.assertTrue(any("/unity-catalog/catalogs/parent" in c[1] for c in cloud.calls if len(c) == 3))
 
-    def test_unavailable_mv_backing_location_pauses_without_recreating(self):
+    def test_unavailable_mv_backing_location_completes_without_recreating(self):
         cfg = config(("compatibility",))
         cloud = SimulatedCloud(cfg)
         with tempfile.TemporaryDirectory() as directory:
             state = State(Path(directory) / "state.json", cfg)
-            workflow = cloud.workflow(cfg, state, Operator(cloud, deny="mv/backing-location"))
+            workflow = cloud.workflow(cfg, state, Operator(cloud))
             metadata = {"table_id": TENANT, "table_type": "MATERIALIZED_VIEW", "comment": workflow.marker}
             db = Mock()
             db.get.side_effect = lambda kind, full_name, missing=False: None if missing else metadata
             db.submit_sql.return_value = {"statement_id": SUB}
+            db.finish_sql.side_effect = [Waiting("Previously submitted MV remains pending"), None]
             root = f"abfss://{TENANT}@onelake.dfs.fabric.microsoft.com/{SUB}/Files/managed"
+            with self.assertRaises(Waiting):
+                workflow.uc_create("mv", db, WAREHOUSE, "tables", "parent.compat.mv",
+                                   "CREATE MATERIALIZED VIEW `parent`.`compat`.`mv`", root)
+            workflow = cloud.workflow(cfg, State(state.path, cfg), Operator(cloud))
             for _ in range(2):
-                with self.assertRaises(Waiting):
-                    workflow.uc_create("mv", db, WAREHOUSE, "tables", "parent.compat.mv",
-                                       "CREATE MATERIALIZED VIEW `parent`.`compat`.`mv`", root)
+                result = workflow.uc_create("mv", db, WAREHOUSE, "tables", "parent.compat.mv",
+                                            "CREATE MATERIALIZED VIEW `parent`.`compat`.`mv`", root)
+                self.assertEqual(result["storage_evidence"], "not checked (MV backing metadata excluded)")
             self.assertEqual(db.submit_sql.call_count, 1)
-            self.assertEqual(state.data["steps"]["mv"]["status"], "submitted")
+            self.assertEqual(workflow.state.data["steps"]["mv"]["status"], "done")
             self.assertNotIn("uc-storage/parent.compat.mv", state.data["inputs"])
+            workflow.uc_check(db, "tables", dict(result, storage=root, storage_evidence="operator-entered location"))
+
+    def test_compatibility_without_mv_backing_metadata_deploys_and_resumes(self):
+        cfg = config(("compatibility",))
+        cloud = SimulatedCloud(cfg)
+        original = cloud.execute
+
+        def execute(sql):
+            if sql.startswith("DESCRIBE") and MV in sql:
+                self.fail("MV backing version metadata must not be queried")
+            rows = original(sql)
+            if sql.startswith("CREATE MATERIALIZED VIEW"):
+                for remote in cloud.tables.values():
+                    if remote["table_type"] == "MATERIALIZED_VIEW":
+                        remote.pop("storage_location", None)
+            return rows
+
+        cloud.execute = execute
+        operator = Operator(cloud)
+        read_input = operator.read_input
+
+        def read_without_backing(label):
+            if "MV backing" in label or f"generated {MV} clone" in label or label.startswith(MV):
+                self.fail("MV backing metadata must not be requested")
+            return read_input(label)
+
+        operator.read = read_without_backing
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "state.json"
+            for _ in range(2):
+                result = cloud.workflow(cfg, State(path, cfg), operator).run()["compatibility"]
+                self.assertEqual(result["status"], "setup-checked", result)
+                self.assertEqual(result["mv_backing_metadata"], "not checked (excluded from demo setup)")
+                self.assertEqual(result["output_provenance"][MV], {"comparison": "not checked (MV backing metadata excluded)"})
+                self.assertNotIn("source_version", result["freshness_observations"][MV])
+                self.assertEqual(len(result["output_protocols"]), 5)
+            state = State(path, cfg)
+            self.assertNotIn("compatibility/backing-id", state.data["inputs"])
+            self.assertNotIn("compatibility/clone-source/" + MV, state.data["inputs"])
+            self.assertNotIn("compatibility/mv-backing-identity", state.data["steps"])
+            self.assertEqual(len([sql for sql in cloud.sql if sql.startswith("CREATE MATERIALIZED VIEW")]), 2)
 
     def test_workspace_display_names_create_and_reuse_without_relaxing_identifiers(self):
         long_name = "New workspace " + "x" * (256 - len("New workspace "))

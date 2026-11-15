@@ -115,6 +115,11 @@ workspace, two Storage items and two UC schemas. Both producer sets retain
 `catalogManaged`; only the compatible set generates separate, read-only
 down-level outputs. Source and output locations and actual reader/writer
 protocols and feature lists must be recorded separately.
+For guided setup, the user explicitly excluded MV backing location, ID, version
+and protocol verification. Missing backing metadata does not block deployment
+and is not reported as verified. Required MV creation/refresh and checks of
+actual generated compatibility outputs remain; table provenance/freshness checks
+are unchanged. The historical backing evidence below is preserved separately.
 
 Each producer set contains the four baseline tables and a native sales
 materialized view at Day × Product × Region × Segment grain, without

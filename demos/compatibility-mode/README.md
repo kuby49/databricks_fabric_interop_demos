@@ -11,6 +11,10 @@ identity/location setup, seven-day/empty-output eligibility, freshness/provenanc
 and real normal mirror discovery. Default checks do not run Fabric Spark or claim
 end-to-end equality. Output generation/refresh and capacity can incur ongoing
 charges; optional tests need separate consent. Keep private state for safe resume.
+MV backing location, ID, version and protocol verification are excluded from
+guided setup; unavailable backing metadata is not a blocker. Actual generated
+output routing, IDs/protocol/features and shortcuts remain checked, but MV
+backing-source freshness/provenance are not claimed as verified.
 The historical discovery/backing-protocol observations below are preserved, not
 asserted to be universal limits or new deployer test results.
 
