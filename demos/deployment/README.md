@@ -185,13 +185,14 @@ pass. API-readable prerequisites are reread on resume.
    before enabling each untouched output. It never writes files into these paths.
    See [Compatibility Mode](https://learn.microsoft.com/azure/databricks/external-access/compatibility-mode).
 7. **Compatibility generation and freshness:** required deployment statements
-   create/refresh both native MVs and refresh all five genuine compatibility
+   create/refresh one native MV in the normal producer schema and refresh all five genuine compatibility
    versions with `SYNC UNIFORM`. Inspect the four table producers' history,
    Uniform Compatibility Information and generated output Delta histories.
    Table output clone source IDs are compared to actual table IDs. The script
    verifies compatibility routing and actual output log IDs/protocol/features
    for all five outputs. Table/schema managed storage must remain beneath the
-   selected OneLake roots. MV backing location, ID, version and protocol checks
+   single normal OneLake root. There is no second producer or canary provisioning.
+   MV backing location, ID, version and protocol checks
    are excluded; missing backing metadata does not block setup and is never
    treated as verified evidence.
    The validation Lakehouse uses non-schema-enabled Tables-root shortcuts.
@@ -207,6 +208,13 @@ pass. API-readable prerequisites are reread on resume.
    outputs directly. The Fabric notebook is deployed with real
    `metadata.trident.lakehouse` binding, not merely a Python metadata comment.
    It is **not run by default**.
+
+Compatibility resume rejects legacy two-producer saved states before cloud writes;
+preserve them and perform an explicitly approved, ownership/dependency-checked
+migration instead. Never restart loading over existing tables. Missing recorded
+shortcuts are restored only from unchanged saved targets; collisions or changed
+targets block. Mirror discovery records actual resolved targets, which may
+redirect to compatibility outputs; no negative-control result is assumed.
 
 Creating an access connector, storage account/container, changing ACLs/roles,
 entering connection credentials, and shared/preview/tenant settings deliberately
@@ -310,4 +318,6 @@ backing-table GUIDs and reports OneLake backing locations. Its failed
 `LOCATION_OVERLAP` checks prevented verification of the **actual backing
 protocol**, not those recorded identities/locations. These observations are
 preserved as historical evidence only; they are not deployment blockers.
-Do not infer missing evidence, replace the native MV or remove catalog commits.
+Do not infer missing evidence or remove catalog commits. The general deployer
+never replaces existing MVs. An explicitly approved existing-demo migration may
+replace only the known demo-owned MV after ownership and dependency checks.

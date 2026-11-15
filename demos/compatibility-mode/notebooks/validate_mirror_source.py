@@ -1,4 +1,4 @@
-"""Observe the pilot's modern source through a mirror-based Lakehouse shortcut."""
+"""Optional, cost-approved mirror-based read; inspect resolved targets separately."""
 
 import json
 import platform
@@ -11,15 +11,15 @@ observations = {
     "observed_at_utc": datetime.now(timezone.utc).isoformat(),
     "spark_version": spark.version,
     "python_version": platform.python_version(),
-    "table": "fabricinterop_cc_validation.pilot_dimdate",
-    "path_role": "compatibility-enabled managed source, not generated output or normal control",
+    "table": "fabricinterop_cc_compat_validation.normal_dimdate",
+    "path_role": "mirror-based shortcut; target may redirect after Compatibility Mode enablement",
 }
 
 try:
-    tables = spark.catalog.listTables("fabricinterop_cc_validation")
+    tables = spark.catalog.listTables("fabricinterop_cc_compat_validation")
     observations["listing"] = {
         "status": "succeeded",
-        "pilot_dimdate_visible": any(table.name == "pilot_dimdate" for table in tables),
+        "normal_dimdate_visible": any(table.name == "normal_dimdate" for table in tables),
     }
 except Exception as error:
     observations["listing"] = {
@@ -30,7 +30,7 @@ except Exception as error:
 
 try:
     count = spark.sql(
-        "SELECT COUNT(*) AS row_count FROM fabricinterop_cc_validation.pilot_dimdate"
+        "SELECT COUNT(*) AS row_count FROM fabricinterop_cc_compat_validation.normal_dimdate"
     ).first()["row_count"]
     observations["query"] = {"status": "succeeded", "row_count": count}
 except Exception as error:

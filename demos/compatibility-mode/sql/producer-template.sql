@@ -6,7 +6,7 @@
 CREATE SCHEMA {{catalog}}.{{schema}}
 MANAGED LOCATION '{{managed_folder}}';
 
--- Apply this table block separately to each new schema, never to the pilot.
+-- Apply this block once to the normal producer schema, never over live data.
 -- No LOCATION clause: these tables inherit their schema's managed location.
 CREATE TABLE {{catalog}}.{{schema}}.DimDate (
   DateKey INT NOT NULL,
@@ -42,9 +42,9 @@ CREATE TABLE {{catalog}}.{{schema}}.FactSales (
   SalesAmount DECIMAL(14,2)
 ) USING DELTA TBLPROPERTIES ('delta.feature.catalogManaged' = 'supported');
 
--- Load the prepared baseline once into each schema and validate nulls,
+-- Load the prepared baseline once into the normal schema and validate nulls,
 -- duplicates and orphan keys before applying this informational constraint
--- block separately to each schema. Databricks does not enforce PK/FK keys.
+-- block once. Databricks does not enforce PK/FK keys.
 ALTER TABLE {{catalog}}.{{schema}}.DimDate
   ADD CONSTRAINT dimdate_pk PRIMARY KEY (DateKey);
 ALTER TABLE {{catalog}}.{{schema}}.DimProduct
@@ -65,41 +65,25 @@ ALTER TABLE {{catalog}}.{{schema}}.FactSales
 
 -- Only after each destination's existence, emptiness, seven-day reuse and
 -- privileges have been independently verified, enable the compatibility tables.
-ALTER TABLE {{catalog}}.{{compat_schema}}.DimDate SET TBLPROPERTIES (
+ALTER TABLE {{catalog}}.{{schema}}.DimDate SET TBLPROPERTIES (
   'delta.universalFormat.enabledFormats' = 'compatibility',
   'delta.universalFormat.compatibility.location' = '{{unique_empty_dimdate_destination}}'
 );
-ALTER TABLE {{catalog}}.{{compat_schema}}.DimProduct SET TBLPROPERTIES (
+ALTER TABLE {{catalog}}.{{schema}}.DimProduct SET TBLPROPERTIES (
   'delta.universalFormat.enabledFormats' = 'compatibility',
   'delta.universalFormat.compatibility.location' = '{{unique_empty_dimproduct_destination}}'
 );
-ALTER TABLE {{catalog}}.{{compat_schema}}.DimCustomer SET TBLPROPERTIES (
+ALTER TABLE {{catalog}}.{{schema}}.DimCustomer SET TBLPROPERTIES (
   'delta.universalFormat.enabledFormats' = 'compatibility',
   'delta.universalFormat.compatibility.location' = '{{unique_empty_dimcustomer_destination}}'
 );
-ALTER TABLE {{catalog}}.{{compat_schema}}.FactSales SET TBLPROPERTIES (
+ALTER TABLE {{catalog}}.{{schema}}.FactSales SET TBLPROPERTIES (
   'delta.universalFormat.enabledFormats' = 'compatibility',
   'delta.universalFormat.compatibility.location' = '{{unique_empty_factsales_destination}}'
 );
 
--- Normal path only: compatibility properties are absent.
-CREATE MATERIALIZED VIEW {{catalog}}.{{normal_schema}}.sales_by_day_product_region_segment
-TBLPROPERTIES ('delta.feature.catalogManaged' = 'supported')
-AS
-SELECT d.DateKey, d.`Date`, d.CalendarYear, d.CalendarMonth, d.MonthName,
-       d.DayOfMonth, d.IsWeekend, p.ProductKey, p.ProductName, p.Category,
-       c.Region, c.Segment, SUM(f.SalesAmount) AS TotalSales,
-       SUM(f.Quantity) AS TotalQuantity, COUNT(*) AS SalesLineCount
-FROM {{catalog}}.{{normal_schema}}.FactSales f
-JOIN {{catalog}}.{{normal_schema}}.DimDate d ON f.DateKey = d.DateKey
-JOIN {{catalog}}.{{normal_schema}}.DimProduct p ON f.ProductKey = p.ProductKey
-JOIN {{catalog}}.{{normal_schema}}.DimCustomer c ON f.CustomerKey = c.CustomerKey
-GROUP BY d.DateKey, d.`Date`, d.CalendarYear, d.CalendarMonth, d.MonthName,
-         d.DayOfMonth, d.IsWeekend, p.ProductKey, p.ProductName, p.Category,
-         c.Region, c.Segment;
-
--- Compatibility path: the destination must pass all checks before CREATE.
-CREATE MATERIALIZED VIEW {{catalog}}.{{compat_schema}}.sales_by_day_product_region_segment
+-- One native MV, using the same normal tables; properties are set at creation.
+CREATE MATERIALIZED VIEW {{catalog}}.{{schema}}.sales_by_day_product_region_segment
 TBLPROPERTIES (
   'delta.feature.catalogManaged' = 'supported',
   'delta.universalFormat.enabledFormats' = 'compatibility',
@@ -110,10 +94,10 @@ SELECT d.DateKey, d.`Date`, d.CalendarYear, d.CalendarMonth, d.MonthName,
        d.DayOfMonth, d.IsWeekend, p.ProductKey, p.ProductName, p.Category,
        c.Region, c.Segment, SUM(f.SalesAmount) AS TotalSales,
        SUM(f.Quantity) AS TotalQuantity, COUNT(*) AS SalesLineCount
-FROM {{catalog}}.{{compat_schema}}.FactSales f
-JOIN {{catalog}}.{{compat_schema}}.DimDate d ON f.DateKey = d.DateKey
-JOIN {{catalog}}.{{compat_schema}}.DimProduct p ON f.ProductKey = p.ProductKey
-JOIN {{catalog}}.{{compat_schema}}.DimCustomer c ON f.CustomerKey = c.CustomerKey
+FROM {{catalog}}.{{schema}}.FactSales f
+JOIN {{catalog}}.{{schema}}.DimDate d ON f.DateKey = d.DateKey
+JOIN {{catalog}}.{{schema}}.DimProduct p ON f.ProductKey = p.ProductKey
+JOIN {{catalog}}.{{schema}}.DimCustomer c ON f.CustomerKey = c.CustomerKey
 GROUP BY d.DateKey, d.`Date`, d.CalendarYear, d.CalendarMonth, d.MonthName,
          d.DayOfMonth, d.IsWeekend, p.ProductKey, p.ProductName, p.Category,
          c.Region, c.Segment;

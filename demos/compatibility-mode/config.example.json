@@ -5,8 +5,7 @@
     "parent_catalog_approved": false,
     "warehouse_id": "",
     "storage_credential": "fabricinterop_onelake_cred",
-    "normal_schema": "fabricinterop_cc_normal",
-    "compat_schema": "fabricinterop_cc_compat"
+    "normal_schema": "fabricinterop_cc_normal"
   },
   "fabric": {
     "workspace_name": "fabricinterop_compatibility",
@@ -15,12 +14,11 @@
     "capacity_id": "",
     "connection_id": "",
     "normal_storage_name": "fabricinterop_cc_normal_storage",
-    "normal_storage_id": "",
-    "compat_storage_name": "fabricinterop_cc_compat_storage",
-    "compat_storage_id": ""
+    "normal_storage_id": ""
   },
   "deployment": {
-    "feasibility_status": "blocked",
+    "output_root": "abfss://outputs@exampleaccount.dfs.core.windows.net/compatibility/unique-approved-deployment",
+    "verification_scope": "resource_setup_only",
     "verification_timeout_seconds": 900,
     "sample_data": {
       "date_rows": 365,

@@ -1,19 +1,15 @@
 flowchart LR
   GEN["Deterministic baseline"]
   NC["Normal UC schema<br/>four tables + native MV"]
-  CC["Compatibility UC schema<br/>four tables + native MV"]
   NS["Normal OneLake Storage<br/>catalog-managed sources"]
-  CS["Compatibility OneLake Storage<br/>catalog-managed sources"]
   OUT["ADLS compatibility outputs<br/>five read-only Delta paths"]
-  NM["Normal mirrored catalog<br/>four source tables"]
-  LH["Validation Lakehouse<br/>direct compatibility shortcuts"]
-  SQL["Fabric SQL<br/>both paths readable"]
-  SP["Fabric Spark<br/>compatibility readable;<br/>normal coordinator error"]
+  NM["Normal mirrored catalog<br/>inspect resolved targets + MV discovery"]
+  LH["Validation Lakehouse<br/>mirror + direct output shortcuts"]
+  SQL["Fabric SQL<br/>optional read verification"]
+  SP["Fabric Spark<br/>optional read verification"]
   GEN --> NC
-  GEN --> CC
   NC --> NS
-  CC --> CS
-  CC -->|"Compatibility Mode"| OUT
+  NC -->|"Compatibility Mode"| OUT
   NS --> NM
   NM --> SQL
   NM -->|"mirror-based shortcuts"| LH

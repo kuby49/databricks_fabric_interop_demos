@@ -111,8 +111,8 @@ Verify UC-enabled compute, a Databricks SQL warehouse, a Power BI Premium/PPU/Fa
 
 The approved design reuses the Databricks workspace, catalog, writable isolated
 credential, identity, Fabric connection and capacity, with a separate Fabric
-workspace, two Storage items and two UC schemas. Both producer sets retain
-`catalogManaged`; only the compatible set generates separate, read-only
+workspace, one normal Storage item and one normal UC schema. Its producers retain
+`catalogManaged` and generate five separate, read-only
 down-level outputs. Source and output locations and actual reader/writer
 protocols and feature lists must be recorded separately.
 For guided setup, the user explicitly excluded MV backing location, ID, version
@@ -121,7 +121,7 @@ and is not reported as verified. Required MV creation/refresh and checks of
 actual generated compatibility outputs remain; table provenance/freshness checks
 are unchanged. The historical backing evidence below is preserved separately.
 
-Each producer set contains the four baseline tables and a native sales
+The single producer schema contains the four baseline tables and one native sales
 materialized view at Day × Product × Region × Segment grain, without
 customer-level grouping. Include date and product descriptors, exact sales
 total, total quantity and line count. Verify source keys, row counts, totals,
@@ -135,7 +135,17 @@ permission or readiness failures are not successful negative controls. Check
 resolved paths, output provenance, freshness and protocol independently, with
 bounded 900-second checks.
 
-**Deployment evidence:** the OneLake compatibility destination attempt
+No compatibility producer schema/Storage item or canary is provisioned.
+Managed tables may be altered; the native MV requires compatibility properties
+at creation. Existing-demo migration preserves normal table IDs/data, uses new
+eligible empty ADLS paths, checks MV replacement dependencies and restores only
+verified mirror-based shortcuts. Delete only obsolete demo-owned resources in
+dependency order; preserve old outputs and shared infrastructure. Legacy saved
+states must not replay loads. Default verification is setup-only; end-to-end
+checks require separate cost confirmation. Inspect actual mirror targets after
+enablement; no compatibility-off negative control is guaranteed.
+
+**Historical deployment evidence (before single-source migration):** the OneLake compatibility destination attempt
 required `CREATE EXTERNAL TABLE`, while the location-scoped grant was rejected
 as inapplicable to `EXTERNAL_LOCATION_ONELAKE_MANAGED`. The approved fallback
 uses `dbxfabricinterop` ADLS only for compatibility outputs. Both native MVs

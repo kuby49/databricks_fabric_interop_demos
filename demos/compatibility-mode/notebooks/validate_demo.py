@@ -1,4 +1,4 @@
-"""Read the deployed normal mirror and generated compatibility shortcuts."""
+"""Optional, separately cost-approved reads; resolved targets are recorded in the manifest."""
 
 import hashlib
 import json
@@ -15,6 +15,7 @@ observations = {
     "python_version": platform.python_version(),
     "tables": {},
 }
+lakehouse_name = "fabricinterop_cc_compat_validation"
 
 objects = {
     "dimdate": (["DateKey", "Date", "CalendarYear", "CalendarMonth", "MonthName",
@@ -42,10 +43,12 @@ def canonical(value):
 
 for path in ("normal", "compat"):
     for name, (columns, keys) in objects.items():
-        if path == "normal" and name == "sales_by_day_product_region_segment":
-            continue
-        table = f"fabricinterop_cc_validation.{path}_{name}"
+        shortcut_name = "compat_salesagg" if path == "compat" and name == "sales_by_day_product_region_segment" else f"{path}_{name}"
+        table = f"{lakehouse_name}.{shortcut_name}"
         try:
+            if not spark.catalog.tableExists(table):
+                observations["tables"][f"{path}.{name}"] = {"status": "not_discovered"}
+                continue
             frame = spark.table(table).select(*columns).orderBy(*keys)
             rows = [[canonical(value) for value in row] for row in frame.collect()]
             digest = hashlib.sha256(

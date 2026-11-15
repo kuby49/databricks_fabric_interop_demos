@@ -89,8 +89,12 @@ def wire(method, endpoint, headers, body, timeout):
         # Service messages can echo credentials or signed storage locations.
         headers = {k.lower(): v for k, v in error.headers.items()}
         status = error.code
+        try:
+            data = json.loads(error.read())
+        except (ValueError, UnicodeDecodeError):
+            data = {}
         error.close()
-        return Response(status, {}, headers)
+        return Response(status, data, headers)
     except (URLError, TimeoutError, OSError):
         raise DeploymentError("Network failure; a write may have been accepted. Resume only with a recorded operation ID.") from None
     except json.JSONDecodeError:
@@ -138,6 +142,15 @@ class HTTP:
             if result.status == 429 or (method == "GET" and result.status in (500, 502, 503, 504)):
                 self.delay(result.headers, deadline)
                 continue
+            error_data = result.data if isinstance(result.data, dict) else {}
+            details = error_data.get("moreDetails", [])
+            capacity_unavailable = (
+                error_data.get("errorCode") == "CapacityNotActive"
+                or any("capacity" in str(d.get("message", "")).lower()
+                       and "not available" in str(d.get("message", "")).lower() for d in details)
+            )
+            if capacity_unavailable:
+                raise Waiting("Fabric capacity is inactive/unavailable. A 404 is not evidence of resource absence; have the administrator resume the selected capacity with cost approval.")
             if missing and result.status == 404:
                 return None
             if not 200 <= result.status < 300:
@@ -334,10 +347,10 @@ class Fabric:
         if actual.get("id") != expected["id"]:
             raise DeploymentError("Fabric immutable resource ID changed.")
 
-    def definition(self, workspace, item, format=None):
+    def definition(self, workspace, item, definition_format=None):
         path = f"/workspaces/{workspace}/items/{item}/getDefinition"
-        if format:
-            path += "?format=" + quote(format, safe="")
+        if definition_format:
+            path += "?format=" + quote(definition_format, safe="")
         response = self.http.request("POST", path, {})
         if response.status == 202:
             operation = response.headers.get("x-ms-operation-id")
@@ -367,7 +380,7 @@ class Fabric:
     def check_shortcut(self, handle, body):
         actual = self.get(handle["path"])
         for key in ("name", "path"):
-            if actual.get(key) != body[key]:
+            if (actual.get(key, "").lstrip("/") if key == "path" else actual.get(key)) != body[key]:
                 raise DeploymentError("Shortcut identity changed.")
         for kind, target in body["target"].items():
             if actual.get("target", {}).get(kind) != target:

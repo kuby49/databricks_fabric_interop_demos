@@ -200,7 +200,7 @@ class SimulatedCloud:
         if item["type"] == "MirroredAzureDatabricksCatalog":
             definition = json.loads(base64.b64decode(body["definition"]["parts"][0]["payload"]))
             schema = definition["mirrorConfiguration"]["schemas"][0]
-            self.shortcuts[item_id] = [{"path": "Tables/" + schema["name"], "name": t["name"],
+            self.shortcuts[item_id] = [{"path": "/Tables/" + schema["name"], "name": t["name"],
                                        "target": {"oneLake": {"itemId": item_id}}} for t in schema["tables"]]
         if self.lro and item["type"] != "Workspace":
             op = str(uuid4())
@@ -248,6 +248,7 @@ class SimulatedCloud:
             location = re.search(r"'delta.universalFormat.compatibility.location' = '([^']+)'", sql)
             if location:
                 properties["delta.universalFormat.compatibility.location"] = location[1]
+                properties["delta.universalFormat.enabledFormats"] = "compatibility"
             self.tables[full] = {"table_id": str(uuid4()), "name": parts[2].lower(), "comment": marker[1],
                                  "storage_location": self.schemas[".".join(parts[:2])]["storage_root"] + "/tables/" + parts[2],
                                  "table_type": "MATERIALIZED_VIEW" if "MATERIALIZED VIEW" in sql else "MANAGED", "properties": properties}
@@ -258,6 +259,7 @@ class SimulatedCloud:
             full = ".".join(parts[:3])
             location = re.search(r"'delta.universalFormat.compatibility.location' = '([^']+)'", sql)[1]
             self.tables[full]["properties"]["delta.universalFormat.compatibility.location"] = location
+            self.tables[full]["properties"]["delta.universalFormat.enabledFormats"] = "compatibility"
         elif sql.startswith("INSERT"):
             converted = self.sqlite_sql(sql)
             self.sql_database.execute(converted)
@@ -316,7 +318,7 @@ class Operator(Console):
             return "Tables/" + schema
         if "clone source GUID" in label:
             table = re.search(r"generated (\S+) clone", label)[1]
-            return self.cloud.tables["parent.compatibility_compat." + table]["table_id"]
+            return self.cloud.tables["parent.compatibility_normal." + table]["table_id"]
         value = str(uuid4())
         if "semantic-model GUID" in label:
             self.cloud.model_id = value
@@ -336,13 +338,13 @@ class DeploymentTests(unittest.TestCase):
                 self.assertEqual({r["status"] for r in results.values()}, {"setup-checked"}, results)
                 before = len(cloud.sql)
                 before_writes = len([sql for sql in cloud.sql if not sql.startswith("DESCRIBE")])
-                writes = sum(c[0] in ("POST", "PUT") and not c[1].split("?")[0].endswith("/getDefinition") for c in cloud.calls if len(c) == 3)
+                writes = sum(c[0] in ("POST", "PUT") and not urlsplit(c[1]).path.endswith("/getDefinition") for c in cloud.calls if len(c) == 3)
                 results = cloud.workflow(cfg, State(state.path, cfg), operator).run()
                 self.assertEqual(len([sql for sql in cloud.sql if not sql.startswith("DESCRIBE")]), before_writes)
                 new_calls = cloud.calls
                 # Compatibility resource setup legitimately rereads SQL version metadata on resume.
                 metadata_queries = len([sql for sql in cloud.sql[before:] if sql.startswith("DESCRIBE")])
-                self.assertEqual(sum(c[0] in ("POST", "PUT") and not c[1].split("?")[0].endswith("/getDefinition") for c in new_calls if len(c) == 3),
+                self.assertEqual(sum(c[0] in ("POST", "PUT") and not urlsplit(c[1]).path.endswith("/getDefinition") for c in new_calls if len(c) == 3),
                                  writes + metadata_queries)
                 for demo in selected:
                     schemas = results[demo].get("schemas", [results[demo].get("schema")])
@@ -542,7 +544,84 @@ class DeploymentTests(unittest.TestCase):
             self.assertNotIn("compatibility/backing-id", state.data["inputs"])
             self.assertNotIn("compatibility/clone-source/" + MV, state.data["inputs"])
             self.assertNotIn("compatibility/mv-backing-identity", state.data["steps"])
-            self.assertEqual(len([sql for sql in cloud.sql if sql.startswith("CREATE MATERIALIZED VIEW")]), 2)
+            self.assertEqual(len([sql for sql in cloud.sql if sql.startswith("CREATE MATERIALIZED VIEW")]), 1)
+
+    def test_single_source_and_missing_recorded_shortcut_restored_without_loading(self):
+        cfg = config(("compatibility",))
+        cloud = SimulatedCloud(cfg)
+        with tempfile.TemporaryDirectory() as directory:
+            state = State(Path(directory) / "state.json", cfg)
+            operator = Operator(cloud)
+            result = cloud.workflow(cfg, state, operator).run()["compatibility"]
+            self.assertEqual(result["schemas"], ["compatibility_normal"])
+            self.assertEqual(len(cloud.schemas), 1)
+            self.assertEqual(len(cloud.tables), 5)
+            self.assertEqual(sum(i["type"] == "AzureDatabricksStorage" for i in cloud.items.values()), 1)
+            self.assertEqual(len(set(result["outputs"].values())), 5)
+            self.assertFalse(any("canary" in sql or "compatibility_compat" in sql for sql in cloud.sql))
+            mv_sql = next(sql for sql in cloud.sql if sql.startswith("CREATE MATERIALIZED VIEW"))
+            self.assertIn("'delta.universalFormat.enabledFormats' = 'compatibility'", mv_sql)
+            self.assertIn("`parent`.`compatibility_normal`.`FactSales`", mv_sql)
+            before = sum(sql.startswith("INSERT") for sql in cloud.sql)
+            shortcuts = cloud.shortcuts[result["lakehouse"]]
+            removed = next(s for s in shortcuts if s["name"] == "normal_dimdate")
+            shortcuts.remove(removed)
+            result = cloud.workflow(cfg, State(state.path, cfg), operator).run()["compatibility"]
+            self.assertEqual(result["status"], "setup-checked", result)
+            self.assertIn(removed, shortcuts)
+            self.assertEqual(sum(sql.startswith("INSERT") for sql in cloud.sql), before)
+            restored = next(s for s in shortcuts if s["name"] == "normal_dimdate")
+            restored["target"]["oneLake"]["itemId"] = str(uuid4())
+            result = cloud.workflow(cfg, State(state.path, cfg), operator).run()["compatibility"]
+            self.assertEqual(result["status"], "blocked")
+            self.assertIn("target changed", result["reason"])
+
+    def test_legacy_two_source_state_stops_before_cloud_calls(self):
+        cfg = config(("compatibility",))
+        for legacy_key in ("compatibility/compat/storage", "compatibility/compatibility_normal/mv"):
+            with self.subTest(legacy_key=legacy_key), tempfile.TemporaryDirectory() as directory:
+                cloud = SimulatedCloud(cfg)
+                state = State(Path(directory) / "state.json", cfg)
+                state.data["steps"][legacy_key] = {"status": "done", "hash": "historical"}
+                with self.assertRaisesRegex(DeploymentError, "Legacy two-producer"):
+                    cloud.workflow(cfg, state, Operator(cloud)).run()
+                self.assertEqual(cloud.calls, [])
+
+    def test_inactive_capacity_404_is_not_missing_resource(self):
+        for payload in ({"errorCode": "CapacityNotActive"},
+                        {"errorCode": "EntityNotFound", "moreDetails": [
+                            {"message": "This Fabric capacity is currently not available."}]}):
+            http = HTTP(FABRIC, lambda: {}, send=lambda *args: Response(404, payload, {}))
+            with self.subTest(payload=payload), self.assertRaisesRegex(Waiting, "not evidence"):
+                http.request("GET", "/workspaces/" + TENANT, missing=True)
+
+    def test_accepted_fabric_action_with_json_null_body_preserves_operation_handle(self):
+        http = HTTP(FABRIC, lambda: {}, send=lambda *args: Response(
+            202, None, {"x-ms-operation-id": TENANT}))
+        response = http.request("POST", "/items/" + SUB + "/getDefinition")
+        self.assertEqual(response.status, 202)
+        self.assertEqual(response.headers["x-ms-operation-id"], TENANT)
+
+    def test_notebook_readback_requests_uploaded_ipynb_format(self):
+        endpoints = []
+        def send(method, endpoint, headers, body, timeout):
+            endpoints.append(endpoint)
+            if urlsplit(endpoint).query != "format=ipynb":
+                return Response(200, {"definition": {"parts": [{"path": "notebook-content.py"}]}}, {})
+            return Response(200, {"definition": {"parts": [{"path": "notebook-content.ipynb"}]}}, {})
+        service = Fabric(config(), http=HTTP(FABRIC, lambda: {}, send=send))
+        result = service.definition(TENANT, SUB, "ipynb")
+        self.assertEqual(result["parts"][0]["path"], "notebook-content.ipynb")
+
+    def test_disabled_compatibility_property_cannot_pass_setup_with_old_output_path(self):
+        cfg = config(("compatibility",))
+        with tempfile.TemporaryDirectory() as directory:
+            cloud = SimulatedCloud(cfg)
+            workflow = cloud.workflow(cfg, State(Path(directory) / "state.json", cfg), Operator(cloud))
+            db = Mock()
+            db.get.return_value = {"properties": {"delta.universalFormat.compatibility.location": "abfss://output"}}
+            with self.assertRaises(Waiting):
+                workflow.check_generated_paths(db, "parent", "compatibility_normal", {"DimDate": "abfss://output"})
 
     def test_workspace_display_names_create_and_reuse_without_relaxing_identifiers(self):
         long_name = "New workspace " + "x" * (256 - len("New workspace "))

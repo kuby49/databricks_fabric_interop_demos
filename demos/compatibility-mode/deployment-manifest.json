@@ -1,5 +1,153 @@
 {
   "demo": "compatibility-mode",
+  "architecture": "single normal UC schema; four tables and one native MV; five generated ADLS outputs",
+  "status": "single_source_setup_verified_with_obsolete_schema_cleanup_blocked",
+  "verification_scope": "resource_setup_only",
+  "mv_backing_metadata": "excluded; not verified",
+  "migration": {
+    "observed_utc": "2026-11-15T20:21:19.415716+00:00",
+    "tenant_id": "4526cee1-4399-4e4b-9134-46fabd583527",
+    "workspace_id": "200976aa-ae68-45b0-a575-1e16e8bfcc1f",
+    "workspace_name": "fabricinterop_compatibility",
+    "capacity_id": "de12195c-40d2-4bee-af60-f0d6dedfbb0f",
+    "capacity": "fabricadbmirror F8; user-authorized resume; Active; continuing charges possible",
+    "normal_schema": "dbxfabricinterop.fabricinterop_cc_normal",
+    "normal_schema_id": "68ea1e88-47b2-499c-bc4c-96d4d9ccf4ba",
+    "normal_storage_id": "5e431e68-199b-4bc5-9a56-2dc5e8b1cfbf",
+    "source_table_ids_preserved": {
+      "DimDate": "14e01d05-d606-4ff9-b500-1b6829ff2ac4",
+      "DimProduct": "3e6f9156-d991-4bb6-b884-7cdadf2b4e4d",
+      "DimCustomer": "adad0c76-1e34-4f9f-8be9-40d24c58e358",
+      "FactSales": "2b8f1e6a-1363-4a82-b3f9-f98f1aeca82c"
+    },
+    "source_data_operations": "ALTER TABLE properties only; no load, append, truncate or table replacement",
+    "native_mv": {
+      "name": "sales_by_day_product_region_segment",
+      "public_uc_id_preserved": "5a921a07-f17d-400c-bdf3-5b6ce79c08df",
+      "operation": "CREATE OR REPLACE MATERIALIZED VIEW with compatibility properties and original aggregation",
+      "dependency_checks": "No dependent views or downstream table-lineage targets; owner and original ID verified",
+      "creation_statement_id": "01f1e12e-83fd-13b6-90d4-8e88370b4963",
+      "refresh_statement_id": "01f1e12e-ab16-115c-a66c-182ef1500d4f",
+      "uniform_statement_id": "01f1e12e-ca5c-1dc1-b7e1-11e1f7f7e868",
+      "refresh": "succeeded",
+      "backing_location_identity_version_protocol": "excluded; not verified"
+    },
+    "output_root": "abfss://fabricinterop-compat-200976aa@dbxfabricinterop.dfs.core.windows.net/compatiblity/fabricinterop_cc_compat/normal-single-source-72613399-3d76-4beb-9820-9f9275697ae5",
+    "output_external_location": "fabricinterop_cc_compat_adls",
+    "eligibility": "New UUID subtree checked against current producer destinations, historical destinations and directory inventory; five existing empty directories verified before enablement",
+    "directory_preparation": "Direct user storage PUT was denied; temporary external volume in normal schema used with existing UC credential and Files API mkdir only; volume metadata removed before enablement; no permission grants changed",
+    "outputs": {
+      "DimDate": {
+        "relative_path": "dimdate",
+        "output_id": "e6eaba4e-468f-4484-9635-82cd648f058c",
+        "clone_source_id": "14e01d05-d606-4ff9-b500-1b6829ff2ac4",
+        "source_version": 2,
+        "refreshed_version": 2,
+        "refreshed_utc": "2026-11-15T19:57:00Z",
+        "enable_statement_id": "01f1e12e-50af-10ff-8092-e87427cee5df",
+        "uniform_statement_id": "01f1e12e-b646-1e55-b1eb-f0cccb046b3a"
+      },
+      "DimProduct": {
+        "relative_path": "dimproduct",
+        "output_id": "e65efb88-346d-4f58-a7c8-74e51ad11310",
+        "clone_source_id": "3e6f9156-d991-4bb6-b884-7cdadf2b4e4d",
+        "source_version": 2,
+        "refreshed_version": 2,
+        "refreshed_utc": "2026-11-15T19:57:12Z",
+        "enable_statement_id": "01f1e12e-56b5-1f1f-80ca-20c318668740",
+        "uniform_statement_id": "01f1e12e-beaf-1f15-87ee-c68b380b3831"
+      },
+      "DimCustomer": {
+        "relative_path": "dimcustomer",
+        "output_id": "b2440ed6-337c-4367-ae06-646ecd5bc074",
+        "clone_source_id": "adad0c76-1e34-4f9f-8be9-40d24c58e358",
+        "source_version": 2,
+        "refreshed_version": 2,
+        "refreshed_utc": "2026-11-15T19:57:19Z",
+        "enable_statement_id": "01f1e12e-5879-1ae0-b387-8f74c853b884",
+        "uniform_statement_id": "01f1e12e-c289-1a15-8189-cd2940f7a4b6"
+      },
+      "FactSales": {
+        "relative_path": "factsales",
+        "output_id": "1f14ace1-a954-4672-92fa-9830965b5c74",
+        "clone_source_id": "2b8f1e6a-1363-4a82-b3f9-f98f1aeca82c",
+        "source_version": 2,
+        "refreshed_version": 2,
+        "refreshed_utc": "2026-11-15T19:57:25Z",
+        "enable_statement_id": "01f1e12e-59d8-1569-a0cb-16477d421f6f",
+        "uniform_statement_id": "01f1e12e-c637-1a23-bfe1-0c192e140cb3"
+      },
+      "sales_by_day_product_region_segment": {
+        "relative_path": "sales_by_day_product_region_segment",
+        "output_id": "046dde98-e4a5-4419-b708-d00a168f8c49",
+        "backing_source_provenance_freshness": "excluded; not verified"
+      }
+    },
+    "generated_output_protocol": {
+      "all_five": "reader 1, writer 7; no catalogManaged in reader or writer features",
+      "table_features": ["appendOnly", "clustering", "domainMetadata", "inCommitTimestamp", "invariants", "redirectWriterOnly-preview", "rowTracking"],
+      "mv_output_features": ["appendOnly", "changeDataFeed", "domainMetadata", "inCommitTimestamp", "invariants", "redirectWriterOnly-preview", "rowTracking"],
+      "table_output_log_versions": 0,
+      "mv_output_log_version": 2
+    },
+    "mirror": {
+      "id": "9cd08f89-7f99-4666-9d5b-193d4f836018",
+      "folder": "Tables/fabricinterop_cc_normal",
+      "refresh_operation_id": "66c08914-7cb2-41e7-9a5e-93d268d4202f",
+      "observed": "All four tables and native MV discovered after refresh",
+      "four_table_targets": "Unchanged OneLake normal source locations recorded in historical evidence",
+      "mv_target": "https://dbxfabricinterop.dfs.core.windows.net/fabricinterop-compat-200976aa/compatiblity/fabricinterop_cc_compat/normal-single-source-72613399-3d76-4beb-9820-9f9275697ae5/sales_by_day_product_region_segment",
+      "negative_control_or_spark_error": "not claimed; no new query tests run"
+    },
+    "lakehouse": {
+      "id": "66f0d6e6-48f0-461d-901d-e4cc50f5c345",
+      "name": "fabricinterop_cc_compat_validation",
+      "mirror_based_shortcuts_created": ["normal_dimdate", "normal_dimproduct", "normal_dimcustomer", "normal_factsales", "normal_sales_by_day_product_region_segment"],
+      "mirror_based_target": "workspace 200976aa-ae68-45b0-a575-1e16e8bfcc1f, mirror 9cd08f89-7f99-4666-9d5b-193d4f836018, Tables/fabricinterop_cc_normal/<discovered_object>",
+      "direct_shortcuts_repointed": {
+        "compat_dimdate": "dimdate",
+        "compat_dimproduct": "dimproduct",
+        "compat_dimcustomer": "dimcustomer",
+        "compat_factsales": "factsales",
+        "compat_salesagg": "sales_by_day_product_region_segment"
+      },
+      "direct_target": "output_root plus relative path; all five targets read back and verified",
+      "four_table_connection_id_preserved": "f9a95c39-5440-4494-a5c5-1a2cf5d467dc",
+      "mv_connection_id_preserved": "21f5c783-3846-4bb7-b83b-11e5cbc22f6d"
+    },
+    "notebooks": {
+      "full_validation_id": "3b54074c-e5ce-45b9-b37b-63929e2079b1",
+      "full_update_operation_id": "f3061789-7aad-4efe-a51d-edd27c824021",
+      "mirror_validation_id": "eb0ec732-15ad-46a1-88a4-287e5542f100",
+      "mirror_update_operation_id": "d9f8c511-6b71-488a-863f-e27d618a09ee",
+      "source_and_lakehouse_binding": "updated to repository sources and read back in ipynb format; verified",
+      "executed": false
+    },
+    "cleanup": {
+      "compatibility_storage_087dd564-3d1f-4341-99a7-c489185b9cab": "already absent",
+      "canary_schema_e59e35b2-5d69-43f5-b738-686cd8985754": "removed after verifying only known residual deleted-demo-MV entries and their owner; no functions or volumes",
+      "canary_schema_statement_id": "01f1e132-2e65-1bca-98a9-0a9893be6b1d",
+      "canary_notebook_f77fece9-7cb5-458a-afed-6644c0c476e4": "removed; no schedules or active jobs",
+      "canary_mirror_5511c0b5-83a0-4626-9250-4a4a2da75990": "already absent",
+      "obsolete_compat_and_canary_pipelines": "already absent",
+      "old_generated_adls_outputs": "preserved; no deletion, VACUUM or file writes",
+      "shared_resources": "identities, roles, credentials, catalogs, connections, accounts and normal source data preserved",
+      "compatibility_schema": {
+        "name": "dbxfabricinterop.fabricinterop_cc_compat",
+        "id": "d9b88e45-2087-42d9-903a-c85e67fb2225",
+        "status": "blocked; preserved",
+        "error_class": "INVALID_PARAMETER_VALUE.SCHEMA_NOT_EMPTY",
+        "error": "Schema has one residual table, zero functions and zero volumes; table API and information_schema expose no identifiable current entry",
+        "failed_restrict_statement_ids": ["01f1e130-ea35-1fe6-a8c4-4f6668e5c7c3", "01f1e131-b50b-1b4f-84e1-989844fa79c1"],
+        "safe_action": "No force/cascade on an uninspectable resource; administrator recovery required"
+      },
+      "compatibility_onelake_external_location": "fabricinterop_cc_compat preserved because obsolete schema still depends on it; shared fabricinterop_onelake_cred unchanged"
+    },
+    "end_to_end_sql_spark_append_propagation": "not run; separate confirmation and compute-cost warning required",
+    "offline_tests": "52 repository tests plus 8 demo-local tests; simulated services, not live query certification"
+  },
+  "historical_evidence": {
+  "demo": "compatibility-mode",
   "status": "deployed_with_normal_mv_mirror_discovery_gap",
   "tenant_id": "4526cee1-4399-4e4b-9134-46fabd583527",
   "reused_resources": {
@@ -721,4 +869,5 @@
       "status": "enabled"
     }
   ]
+  }
 }
