@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from demos.common.star_schema import generate_star_schema, json_safe, StarSchemaConfig
 from demos.deployment.config import DEMOS, validate
@@ -118,12 +118,37 @@ class FederationTests(unittest.TestCase):
         actual["cells"][0].update(id="generated", execution_count=1, outputs=[{"text": "output"}])
         actual["cells"][0]["metadata"]["microsoft"] = {"language": "python"}
         self.assertEqual(notebook_content(actual), notebook_content(expected))
+        actual["cells"][0]["metadata"]["microsoft"]["language"] = "sql"
+        self.assertNotEqual(notebook_content(actual), notebook_content(expected))
         actual["cells"][0]["source"] = ["changed code"]
         self.assertNotEqual(notebook_content(actual), notebook_content(expected))
         actual = deepcopy(expected)
         actual["metadata"]["dependencies"] = {"lakehouse": {"default_lakehouse": WS}}
         with self.assertRaises(DeploymentError):
             notebook_content(actual)
+
+    def test_setup_creates_append_notebook_but_runs_only_baseline(self):
+        cfg = federation_config()
+        spec = cfg["demos"]["federation"]
+        flow = Mock()
+        flow.config = cfg
+        flow.marker = "owner"
+        flow.item.side_effect = [LH, "baseline-notebook", "append-notebook"]
+        flow.azure.http.request.return_value.data = {"identity": {
+            "principalId": spec["identity_object_id"], "tenantId": cfg["tenant_id"]}}
+        db = Mock()
+        db.get.side_effect = [
+            {"id": "credential-id", "read_only": True,
+             "azure_managed_identity": {"access_connector_id": spec["identity_resource_id"]}},
+            {"connection_name": spec["connection"]["name"]},
+        ]
+        with patch("demos.deployment.federation.run_notebook", return_value={"status": "Completed"}) as run:
+            with patch("demos.deployment.federation.create", side_effect=[
+                    {"name": spec["connection"]["name"]}, {"name": spec["catalog"]}]):
+                result = deploy(flow, spec, WS, db, "warehouse")
+        run.assert_called_once_with(flow, "federation/baseline-run", WS, "baseline-notebook")
+        self.assertEqual(result["notebooks"]["append"], "append-notebook")
+        flow.gate.assert_called_once()
 
     def test_connection_reuse_checks_type_workspace_credential_and_id(self):
         db = Mock()

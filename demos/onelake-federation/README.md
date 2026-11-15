@@ -88,6 +88,8 @@ and UC SQL DDL use chargeable compute. The baseline notebook embeds the **same**
 shared generator and schema rather than a second implementation. Default sizes
 are 365 dates, 20 products, 100 customers, 10,000 sales, seed 42, Decimal money.
 The ipynb definition carries actual `metadata.trident.lakehouse` binding.
+Fabric's notebook editor can normalize that binding to `metadata.dependencies`;
+readback checks the binding and executable cells, not editor-generated IDs or outputs.
 Source writes use fully qualified workspace/lakehouse/dbo/table names, refuse
 foreign ownership or changed baselines, and never overwrite.
 
@@ -121,8 +123,32 @@ or a rerun. Compare baseline plus `generate_sales_batch(sample, sample.sales_row
 Keep a late observation as late, and record feature/permission/network failures
 as blocked rather than substituting direct ABFSS reads or copied tables.
 
+Fabric CTAS can omit the Delta writer's `userMetadata` option. Baseline evidence
+therefore identifies the owned, exact-row-verified version-zero creation commit,
+not the later ownership-property commit. The append also sets the session commit
+metadata and requires one matching 10-row append commit. Its UTC timestamp is
+retained on retries; no second append is permitted. If a job fails after writing,
+inspect the actual table/history and preserve the failed job before an explicitly
+recorded recovery. Never delete private state to force a rerun.
+
 See [deployment evidence](deployment-manifest.json) for actual live status;
 portable setup examples do not certify a particular tenant.
+
+### Recorded MCAP deployment
+
+`fabricinterop_federation` owns the schema-enabled Lakehouse; the independent
+foreign catalog is `fabricinterop_federated_sales`. Both SQL (version 2026.45)
+and Spark (DBR 18 LTS, standard access mode) compared every column and row
+successfully at baseline and after the one guarded append.
+
+The append's actual Delta version 2 commit was **2026-11-15 21:00:45.408 UTC**.
+SQL observed the exact 10,010-row fact set at **21:03:31.585523 UTC** (166.18 s);
+Spark observed it at **21:14:21.453750 UTC** (816.05 s). Both were within the
+fixed 30-minute budget recorded from the source commit. These are measured
+upper bounds including verification and Spark cold start, not a refresh SLA.
+Dimensions were unchanged; total sales changed from **930,299.36** to **930,995.27**.
+Resource IDs, original failure/recovery, source commits and reader operation IDs
+are retained in the manifest. Resources remain deployed; no cleanup was performed.
 
 ## Cleanup boundary
 

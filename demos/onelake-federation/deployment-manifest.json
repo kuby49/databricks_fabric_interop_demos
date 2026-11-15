@@ -1,0 +1,150 @@
+{
+  "demo": "onelake-federation",
+  "status": "deployed_sql_and_spark_baseline_and_append_verified",
+  "observed_utc": "2026-11-15T21:21:19.917714+00:00",
+  "verification_scope": "direct foreign-catalog reads; every row and column in all four tables",
+  "tenant_id": "4526cee1-4399-4e4b-9134-46fabd583527",
+  "deployment_id": "6ac2ed1a-74a5-4a5b-9e89-71ec4be2ffab",
+  "fabric": {
+    "workspace_name": "fabricinterop_federation",
+    "workspace_id": "cf3b5ecf-fb1d-4e77-bff8-d6bc592f4fd4",
+    "lakehouse_name": "fabricinterop_federation_lakehouse",
+    "lakehouse_id": "bb566162-2602-418a-a91d-42c09feaef07",
+    "schema_enabled": true,
+    "schema": "dbo",
+    "capacity_id_reused": "de12195c-40d2-4bee-af60-f0d6dedfbb0f",
+    "baseline_notebook_id": "6738b733-6bfa-4396-ab09-9e7227f66ab5",
+    "append_notebook_id": "ed27d353-d4b7-4795-ad53-984853d36767",
+    "binding": "ipynb trident Lakehouse metadata; verified after Fabric UI normalization"
+  },
+  "databricks": {
+    "host": "https://adb-5878076557050.10.azuredatabricks.net",
+    "workspace_id_reused": "5878076557050",
+    "metastore_id_reused": "c5762cd2-9a39-4ab7-ac09-bd95909039a1",
+    "warehouse_id_reused": "f37863b7242d0931",
+    "warehouse_version_observed": "2026.45",
+    "foreign_catalog": "fabricinterop_federated_sales",
+    "foreign_catalog_id": "b915a61e-376c-4a86-9369-7ee0a79556c3",
+    "independent_top_level_catalog": true,
+    "connection": "fabricinterop_federation_connection",
+    "connection_id": "4358ef76-5ed2-44b8-ab51-f22200eca626",
+    "connection_workspace": "cf3b5ecf-fb1d-4e77-bff8-d6bc592f4fd4",
+    "data_item": "bb566162-2602-418a-a91d-42c09feaef07",
+    "credential_reused": "onelake_storage_cred",
+    "credential_read_only_verified": true,
+    "credential_id": "ab2e854a-e00f-41c6-a317-85866e8ddc71",
+    "no_managed_copies_or_files_volume": true
+  },
+  "access": {
+    "connector_principal_id": "afcfa273-c0c4-4a70-9e09-232a5502cec4",
+    "workspace_role": "Viewer",
+    "lakehouse_read_all": true,
+    "bundled_item_permission": "SubscribeOneLakeEvents",
+    "delegated_sas": "Enabled only in the dedicated workspace through Fabric UI",
+    "tenant_prerequisites": "Public API service-principal access, external OneLake access and delegated SAS issuance were already enabled",
+    "tenant_wide_settings_changed": false,
+    "shared_credential_changed": false,
+    "observed_utc": "2026-11-15T20:04:43.301100+00:00"
+  },
+  "tables_discovered": {
+    "DimDate": "dbo.dimdate",
+    "DimProduct": "dbo.dimproduct",
+    "DimCustomer": "dbo.dimcustomer",
+    "FactSales": "dbo.factsales"
+  },
+  "baseline": {
+    "row_counts": {"DimDate": 365, "DimProduct": 20, "DimCustomer": 100, "FactSales": 10000},
+    "sales_total": "930299.36",
+    "seed": 42,
+    "source_delta_version": 0,
+    "source_commit_utc": "2026-11-15T20:11:00.967000+00:00",
+    "source_commit_operation": "CREATE TABLE AS SELECT",
+    "completed_producer_job_id": "e55ded9b-e78a-4aeb-b933-ccffab42ab2d",
+    "producer_end_utc": "2026-11-15T20:40:28.6610709Z",
+    "sql": {
+      "status": "pass",
+      "observed_utc": "2026-11-15T20:46:54.946221+00:00",
+      "statement_ids": {
+        "DimDate": "01f1e135-aca8-1fd9-9b31-f088ccfdb9ff",
+        "DimProduct": "01f1e135-adce-1112-a346-5d262554c428",
+        "DimCustomer": "01f1e135-aed9-18e7-b0b1-13a39ed80418",
+        "FactSales": "01f1e135-aff1-15d9-a340-1d1ef4589ffc"
+      }
+    },
+    "spark": {
+      "status": "pass",
+      "observed_utc": "2026-11-15T20:57:57.328500+00:00",
+      "run_id": 882162556424785,
+      "task_run_id": 656901848416731,
+      "cluster_id": "1115-205122-mzerxtxj",
+      "runtime": "18.x-scala2.13",
+      "access_mode": "USER_ISOLATION",
+      "standard_access_mode": true
+    }
+  },
+  "append": {
+    "approved_operations": 1,
+    "rows_added": 10,
+    "sales_key_range": [10001, 10010],
+    "fact_rows_after_append": 10010,
+    "sales_total_after_append": "930995.27",
+    "producer_job_id": "688a6ceb-e89b-4ffe-8daa-59936542da5b",
+    "producer_status": "Completed",
+    "source_delta_version": 2,
+    "source_commit_utc": "2026-11-15T21:00:45.408000+00:00",
+    "source_commit_operation": "WRITE",
+    "fixed_budget_seconds": 1800,
+    "fixed_deadline_utc": "2026-11-15T21:30:45.408000+00:00",
+    "measurement": "Observed upper bounds include query execution and Spark cold start; not an instantaneous metadata-refresh time or a service SLA",
+    "sql": {
+      "status": "pass",
+      "observed_utc": "2026-11-15T21:03:31.585523+00:00",
+      "elapsed_seconds": 166.177523,
+      "within_deadline": true,
+      "statement_ids": {
+        "DimDate": "01f1e137-fa07-15fd-8af5-3adc6c41f2c5",
+        "DimProduct": "01f1e137-fbfe-1e78-9f5c-cd7c0926f48a",
+        "DimCustomer": "01f1e137-fd96-1a99-b319-c885d59bd05a",
+        "FactSales": "01f1e138-006c-19ac-a3b6-6c8b3b786f74"
+      }
+    },
+    "spark": {
+      "status": "pass",
+      "observed_utc": "2026-11-15T21:14:21.453750+00:00",
+      "elapsed_seconds": 816.04575,
+      "within_deadline": true,
+      "run_id": 738207621872117,
+      "task_run_id": 1055532764429716,
+      "cluster_id": "1115-210439-q0tgnwkj",
+      "runtime": "18.x-scala2.13",
+      "access_mode": "USER_ISOLATION",
+      "standard_access_mode": true
+    }
+  },
+  "initial_failure_and_recovery": {
+    "failed_job_id": "8b88c192-e7b9-4e91-b03c-b31b7539432a",
+    "failure": "StopIteration while selecting CTAS userMetadata, after exact source validation completed",
+    "recovery": "Owned notebook definition updates and a separately recorded baseline job; original failed operation preserved",
+    "baseline_tables_rewritten": false,
+    "fixes": "Identify the verified version-zero creation commit; set session append metadata; normalize known Fabric notebook metadata; interpret startTimeUtc as UTC even without an offset"
+  },
+  "setup_resume_after_append": {
+    "status": "pass",
+    "observed_utc": "2026-11-15T21:21:19.917714+00:00",
+    "source_latest_delta_version": 2,
+    "baseline_job_reused": "e55ded9b-e78a-4aeb-b933-ccffab42ab2d",
+    "failed_and_aborted_operation_history_preserved": true
+  },
+  "cost_and_cleanup": {
+    "shared_capacity_resumed_by": "Separately authorized compatibility session",
+    "capacity_suspended_by_this_demo": false,
+    "warehouse": "Existing X-Small serverless PRO warehouse; 10-minute idle stop",
+    "spark": "One-time standard job clusters; Standard_D4ds_v5 driver and one worker; no retries; terminate with their jobs",
+    "both_job_clusters_observed_terminated": true,
+    "automatic_resource_cleanup": false,
+    "sources_and_catalog_retained": true,
+    "push_or_pull_request": false
+  },
+  "official_reference": "https://learn.microsoft.com/en-us/azure/databricks/query-federation/onelake",
+  "diagram": "architecture.mmd"
+}

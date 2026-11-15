@@ -34,6 +34,8 @@ def notebook_content(body):
         "kernelspec": metadata["kernelspec"],
         "lakehouse": bindings[0] if bindings else None,
         "cells": [{"type": cell["cell_type"], "source": "".join(cell["source"]),
+                   "language": cell.get("metadata", {}).get("microsoft", {}).get(
+                       "language", metadata["kernelspec"]["language"]),
                    "metadata": {key: value for key, value in cell.get("metadata", {}).items()
                                 if key != "microsoft"}}
                   for cell in body["cells"]],
